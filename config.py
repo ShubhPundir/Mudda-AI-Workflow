@@ -11,7 +11,7 @@ class Settings:
     """Application settings"""
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://username:password@localhost:5432/mudda_ai_db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
     
     # Gemini AI
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

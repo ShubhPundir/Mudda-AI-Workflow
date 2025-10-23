@@ -97,8 +97,6 @@ class ComponentService:
         if active_only:
             query = query.filter(Component.is_active == True)
         components = query.all()
-        print("components", components[0].__dict__)
-        
         return [
             ComponentResponse(
                 id=str(component.id),

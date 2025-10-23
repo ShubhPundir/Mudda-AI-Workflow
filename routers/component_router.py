@@ -53,7 +53,6 @@ async def list_components(
         List of components
     """
     try:
-        print("list_components", active_only)
         component_service = ComponentService(db)
         return component_service.list_components(active_only)
     except Exception as e:

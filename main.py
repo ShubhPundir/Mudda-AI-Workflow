@@ -17,7 +17,10 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="AI-powered workflow generation for civic issue resolution",
     version=settings.APP_VERSION,
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # Add CORS middleware
@@ -33,16 +36,6 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(component_router)
 app.include_router(workflow_router)
-
-
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "message": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "status": "active"
-    }
 
 
 if __name__ == "__main__":
