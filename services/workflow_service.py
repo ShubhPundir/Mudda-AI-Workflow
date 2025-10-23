@@ -11,23 +11,19 @@ from schemas import (
     ProblemStatementRequest
 )
 from services.ai_service import AIService
-from services.component_service import ComponentService
 from datetime import datetime
 
 
 class WorkflowService:
     """Service class for Workflow operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.component_service = ComponentService(db)
-        self.ai_service = AIService(self.component_service)
-    
-    def generate_workflow(self, request: ProblemStatementRequest) -> WorkflowGenerationResponse:
+    @staticmethod
+    def generate_workflow(db: Session, request: ProblemStatementRequest) -> WorkflowGenerationResponse:
         """
         Generate a workflow plan for a civic issue
         
         Args:
+            db: Database session
             request: Problem statement describing the civic issue
             
         Returns:
@@ -35,7 +31,7 @@ class WorkflowService:
         """
         try:
             # Generate the workflow plan using AI
-            workflow_json = self.ai_service.generate_workflow_plan(request.problem_statement)
+            workflow_json = AIService.generate_workflow_plan(db, request.problem_statement)
             
             # Save to database
             workflow_plan = WorkflowPlan(
@@ -46,9 +42,9 @@ class WorkflowService:
                 status="draft"
             )
             
-            self.db.add(workflow_plan)
-            self.db.commit()
-            self.db.refresh(workflow_plan)
+            db.add(workflow_plan)
+            db.commit()
+            db.refresh(workflow_plan)
             
             return WorkflowGenerationResponse(
                 workflow_id=str(workflow_plan.id),
@@ -62,17 +58,19 @@ class WorkflowService:
         except Exception as e:
             raise ValueError(f"Failed to generate workflow: {str(e)}")
     
-    def get_workflow(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    @staticmethod
+    def get_workflow(db: Session, workflow_id: str) -> Optional[Dict[str, Any]]:
         """
         Get a specific workflow plan by ID
         
         Args:
+            db: Database session
             workflow_id: UUID of the workflow plan
             
         Returns:
             Workflow plan details or None if not found
         """
-        workflow = self.db.query(WorkflowPlan).filter(WorkflowPlan.id == workflow_id).first()
+        workflow = db.query(WorkflowPlan).filter(WorkflowPlan.id == workflow_id).first()
         
         if not workflow:
             return None
@@ -88,18 +86,20 @@ class WorkflowService:
             "updated_at": workflow.updated_at
         }
     
-    def list_workflows(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    @staticmethod
+    def list_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
         """
         List all workflow plans
         
         Args:
+            db: Database session
             skip: Number of records to skip
             limit: Maximum number of records to return
             
         Returns:
             List of workflow plans
         """
-        workflows = self.db.query(WorkflowPlan).offset(skip).limit(limit).all()
+        workflows = db.query(WorkflowPlan).offset(skip).limit(limit).all()
         
         return [
             {
@@ -112,11 +112,13 @@ class WorkflowService:
             for workflow in workflows
         ]
     
-    def execute_workflow(self, workflow_id: str, execution_data: Optional[Dict[str, Any]] = None) -> WorkflowExecutionResponse:
+    @staticmethod
+    def execute_workflow(db: Session, workflow_id: str, execution_data: Optional[Dict[str, Any]] = None) -> WorkflowExecutionResponse:
         """
         Execute a workflow plan
         
         Args:
+            db: Database session
             workflow_id: UUID of the workflow plan to execute
             execution_data: Optional execution parameters
             
@@ -124,7 +126,7 @@ class WorkflowService:
             Execution details
         """
         # Verify workflow exists
-        workflow = self.db.query(WorkflowPlan).filter(WorkflowPlan.id == workflow_id).first()
+        workflow = db.query(WorkflowPlan).filter(WorkflowPlan.id == workflow_id).first()
         if not workflow:
             raise ValueError("Workflow plan not found")
         
@@ -135,9 +137,9 @@ class WorkflowService:
             status="pending"
         )
         
-        self.db.add(execution)
-        self.db.commit()
-        self.db.refresh(execution)
+        db.add(execution)
+        db.commit()
+        db.refresh(execution)
         
         # TODO: Integrate with Temporal.io for actual execution
         # For now, just return the execution record
@@ -151,17 +153,19 @@ class WorkflowService:
             created_at=execution.created_at or datetime.utcnow()
         )
     
-    def get_execution(self, execution_id: str) -> Optional[Dict[str, Any]]:
+    @staticmethod
+    def get_execution(db: Session, execution_id: str) -> Optional[Dict[str, Any]]:
         """
         Get workflow execution details
         
         Args:
+            db: Database session
             execution_id: UUID of the execution
             
         Returns:
             Execution details or None if not found
         """
-        execution = self.db.query(WorkflowExecution).filter(WorkflowExecution.id == execution_id).first()
+        execution = db.query(WorkflowExecution).filter(WorkflowExecution.id == execution_id).first()
         
         if not execution:
             return None

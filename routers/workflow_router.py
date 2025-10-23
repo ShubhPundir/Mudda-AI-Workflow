@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 
 from sessions.database import get_db
-from services import WorkflowService
+from services.workflow_service import WorkflowService
 from schemas import (
     ProblemStatementRequest,
     WorkflowGenerationResponse,
@@ -33,8 +33,7 @@ async def generate_workflow(
         Generated workflow plan with ID
     """
     try:
-        workflow_service = WorkflowService(db)
-        return workflow_service.generate_workflow(request)
+        return WorkflowService.generate_workflow(db, request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -63,8 +62,7 @@ async def get_workflow(
         Workflow plan details
     """
     try:
-        workflow_service = WorkflowService(db)
-        workflow = workflow_service.get_workflow(workflow_id)
+        workflow = WorkflowService.get_workflow(db, workflow_id)
         
         if not workflow:
             raise HTTPException(
@@ -100,8 +98,7 @@ async def list_workflows(
         List of workflow plans
     """
     try:
-        workflow_service = WorkflowService(db)
-        return workflow_service.list_workflows(skip, limit)
+        return WorkflowService.list_workflows(db, skip, limit)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -127,8 +124,7 @@ async def execute_workflow(
         Execution details
     """
     try:
-        workflow_service = WorkflowService(db)
-        return workflow_service.execute_workflow(workflow_id, request.execution_data)
+        return WorkflowService.execute_workflow(db, workflow_id, request.execution_data)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -157,8 +153,7 @@ async def get_execution(
         Execution details
     """
     try:
-        workflow_service = WorkflowService(db)
-        execution = workflow_service.get_execution(execution_id)
+        execution = WorkflowService.get_execution(db, execution_id)
         
         if not execution:
             raise HTTPException(

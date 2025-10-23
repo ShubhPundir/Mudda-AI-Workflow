@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from sessions.database import get_db
-from services import ComponentService
+from services.component_service import ComponentService
 from schemas import ComponentCreateRequest, ComponentResponse
 
 router = APIRouter(prefix="/components", tags=["components"])
@@ -28,8 +28,7 @@ async def create_component(
         Created component details
     """
     try:
-        component_service = ComponentService(db)
-        return component_service.create_component(request)
+        return ComponentService.create_component(db, request)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -53,8 +52,7 @@ async def list_components(
         List of components
     """
     try:
-        component_service = ComponentService(db)
-        return component_service.list_components(active_only)
+        return ComponentService.list_components(db, active_only)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -78,8 +76,7 @@ async def get_component(
         Component details
     """
     try:
-        component_service = ComponentService(db)
-        component = component_service.get_component(component_id)
+        component = ComponentService.get_component(db, component_id)
         
         if not component:
             raise HTTPException(

@@ -10,10 +10,8 @@ from schemas import ComponentCreateRequest, ComponentResponse
 class ComponentService:
     """Service class for Component operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-    
-    def create_component(self, component_data: ComponentCreateRequest) -> ComponentResponse:
+    @staticmethod
+    def create_component(db: Session, component_data: ComponentCreateRequest) -> ComponentResponse:
         """Create a new component"""
         component = Component(
             name=component_data.name,
@@ -34,9 +32,9 @@ class ComponentService:
             owner_service=component_data.owner_service
         )
         
-        self.db.add(component)
-        self.db.commit()
-        self.db.refresh(component)
+        db.add(component)
+        db.commit()
+        db.refresh(component)
         
         return ComponentResponse(
             id=str(component.id),
@@ -61,9 +59,10 @@ class ComponentService:
             updated_at=component.updated_at
         )
     
-    def get_component(self, component_id: str) -> Optional[ComponentResponse]:
+    @staticmethod
+    def get_component(db: Session, component_id: str) -> Optional[ComponentResponse]:
         """Get a component by ID"""
-        component = self.db.query(Component).filter(Component.id == component_id).first()
+        component = db.query(Component).filter(Component.id == component_id).first()
         
         if not component:
             return None
@@ -91,9 +90,10 @@ class ComponentService:
             updated_at=component.updated_at
         )
     
-    def list_components(self, active_only: bool = True) -> List[ComponentResponse]:
+    @staticmethod
+    def list_components(db: Session, active_only: bool = True) -> List[ComponentResponse]:
         """List all components"""
-        query = self.db.query(Component)
+        query = db.query(Component)
         if active_only:
             query = query.filter(Component.is_active == True)
         components = query.all()
@@ -123,9 +123,10 @@ class ComponentService:
             for component in components
         ]
     
-    def get_components_for_ai(self) -> List[dict]:
+    @staticmethod
+    def get_components_for_ai(db: Session) -> List[dict]:
         """Get components in format suitable for AI processing"""
-        components = self.db.query(Component).filter(Component.is_active == True).all()
+        components = db.query(Component).filter(Component.is_active == True).all()
         
         return [
             {
