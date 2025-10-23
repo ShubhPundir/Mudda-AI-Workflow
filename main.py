@@ -1,0 +1,55 @@
+"""
+FastAPI application for Mudda AI Workflow system
+"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from config import settings
+from sessions.database import engine
+from models import Base
+from routers import component_router, workflow_router, health_router
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title=settings.APP_NAME,
+    description="AI-powered workflow generation for civic issue resolution",
+    version=settings.APP_VERSION,
+    debug=settings.DEBUG
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(health_router)
+app.include_router(component_router)
+app.include_router(workflow_router)
+
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "active"
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.API_HOST,
+        port=settings.API_PORT,
+        reload=settings.DEBUG
+    )
