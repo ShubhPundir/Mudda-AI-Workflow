@@ -3,8 +3,10 @@ Gemini AI client for workflow generation
 """
 import json
 import os
+import re
 from typing import Dict, Any, List
 import google.generativeai as genai
+from schemas.component import ComponentForAI
 
 
 class GeminiClient:
@@ -23,7 +25,7 @@ class GeminiClient:
             raise ValueError("GEMINI_API_KEY environment variable is required")
         
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def _get_system_prompt(self) -> str:
         """Get the system prompt for the AI model"""
@@ -95,13 +97,53 @@ Respond ONLY in **valid JSON** matching this schema:
 ### RULES:
 1. Use only the provided components - do not create fictional ones
 2. Ensure the workflow is logically sound and follows government processes
-3. Include approval steps for sensitive operations
-4. Make sure all step dependencies are properly defined
-5. Use template variables like {{issue_id}} for dynamic inputs
-6. Return ONLY valid JSON, no additional text
+3. Include approval steps for sensitive operations - approval steps MUST have a component_id (use the "Approval Service - Human Review" component if available)
+4. EVERY step MUST have a component_id - no exceptions
+5. Make sure all step dependencies are properly defined
+6. Use template variables like {{issue_id}} for dynamic inputs
+7. Return ONLY valid JSON, no additional text
 """
 
-    def generate_workflow_plan(self, problem_statement: str, components: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def serialize_ai_response(self, response) -> str:
+        """
+        Extract and serialize JSON from AI response, handling markdown code blocks and extra text.
+        
+        Args:
+            response: The response object from Gemini API
+            
+        Returns:
+            Extracted JSON string ready for parsing
+            
+        Raises:
+            ValueError: If response is empty or JSON cannot be extracted
+        """
+        # Extract text from response (handle different response formats)
+        if hasattr(response, 'text'):
+            response_text = response.text
+        elif hasattr(response, 'candidates') and response.candidates:
+            response_text = response.candidates[0].content.parts[0].text
+        else:
+            response_text = str(response)
+        
+        if not response_text:
+            raise ValueError("Empty response from AI model")
+        
+        response_text = response_text.strip()
+        
+        # Try to extract JSON from markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+        if json_match:
+            return json_match.group(1)
+        
+        # Try to find JSON object in the text
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if json_match:
+            return json_match.group(0)
+        
+        # If no JSON found, raise error
+        raise ValueError(f"Could not extract JSON from AI response. Response text: {response_text[:500]}")
+
+    def generate_workflow_plan(self, problem_statement: str, components: List[ComponentForAI]) -> Dict[str, Any]:
         """
         Generate a workflow plan for the given problem statement
         
@@ -115,12 +157,15 @@ Respond ONLY in **valid JSON** matching this schema:
         if not components:
             raise ValueError("No active components available in the system")
         
+        # Convert Pydantic models to dicts for JSON serialization
+        components_dict = [component.model_dump() for component in components]
+        
         # Create the prompt for Gemini
         prompt = f"""
 Problem Statement: {problem_statement}
 
 Available Components:
-{json.dumps(components, indent=2)}
+{json.dumps(components_dict, indent=2)}
 
 Please generate a workflow plan to resolve this civic issue using the available components.
 Follow the DAG structure and ensure all steps are properly connected.
@@ -130,16 +175,21 @@ Follow the DAG structure and ensure all steps are properly connected.
             # Generate response using Gemini
             response = self.model.generate_content(self._get_system_prompt() + "\n\n" + prompt)
             
+            # Extract and serialize JSON from response
+            response_text = self.serialize_ai_response(response)
+            print(f"Response text: {response_text}")
             # Parse the JSON response
-            workflow_json = json.loads(response.text.strip())
-            
+            workflow_json = json.loads(response_text)
+            print(f"Workflow JSON: {workflow_json}")
             # Validate the workflow structure
-            self._validate_workflow(workflow_json, components)
+            self._validate_workflow(workflow_json, components_dict)
             
             return workflow_json
             
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse AI response as JSON: {e}")
+            # Log the actual response for debugging
+            response_text_debug = response_text if 'response_text' in locals() else (response.text if 'response' in locals() and hasattr(response, 'text') else "No response received")
+            raise ValueError(f"Failed to parse AI response as JSON: {e}. Response text: {response_text_debug[:500]}")
         except Exception as e:
             raise ValueError(f"Failed to generate workflow plan: {e}")
 
