@@ -1,13 +1,13 @@
 """
 Schemas package for Mudda AI Workflow system
 """
-from .component import (
+from .component_schema import (
     ComponentSchema,
     ComponentCreateRequest,
     ComponentResponse,
     ComponentForAI
 )
-from .workflow import (
+from .workflow_schema import (
     WorkflowStepSchema,
     WorkflowPlanSchema,
     ProblemStatementRequest,
