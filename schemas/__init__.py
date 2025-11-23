@@ -4,7 +4,8 @@ Schemas package for Mudda AI Workflow system
 from .component import (
     ComponentSchema,
     ComponentCreateRequest,
-    ComponentResponse
+    ComponentResponse,
+    ComponentForAI
 )
 from .workflow import (
     WorkflowStepSchema,
@@ -19,6 +20,7 @@ __all__ = [
     "ComponentSchema",
     "ComponentCreateRequest", 
     "ComponentResponse",
+    "ComponentForAI",
     "WorkflowStepSchema",
     "WorkflowPlanSchema",
     "ProblemStatementRequest",

@@ -35,11 +35,14 @@ class WorkflowService:
             
             # Save to database
             workflow_plan = WorkflowPlan(
-                workflow_name=workflow_json["workflow_name"],
+                name=workflow_json["workflow_name"],
                 description=workflow_json["description"],
-                problem_statement=request.problem_statement,
-                workflow_json=workflow_json,
-                status="draft"
+                issue_id=None,  # Can be set later when issue is created
+                plan_json=workflow_json,
+                ai_model_used="gemini-2.5-flash",
+                status="DRAFT",
+                version="1.0",
+                is_temporal_ready=False
             )
             
             db.add(workflow_plan)
@@ -77,11 +80,17 @@ class WorkflowService:
         
         return {
             "id": str(workflow.id),
-            "workflow_name": workflow.workflow_name,
+            "name": workflow.name,
             "description": workflow.description,
-            "problem_statement": workflow.problem_statement,
-            "workflow_json": workflow.workflow_json,
+            "issue_id": str(workflow.issue_id) if workflow.issue_id else None,
+            "plan_json": workflow.plan_json,
+            "ai_model_used": workflow.ai_model_used,
             "status": workflow.status,
+            "created_by": workflow.created_by,
+            "approved_by": workflow.approved_by,
+            "approval_notes": workflow.approval_notes,
+            "version": workflow.version,
+            "is_temporal_ready": workflow.is_temporal_ready,
             "created_at": workflow.created_at,
             "updated_at": workflow.updated_at
         }
@@ -104,9 +113,11 @@ class WorkflowService:
         return [
             {
                 "id": str(workflow.id),
-                "workflow_name": workflow.workflow_name,
+                "name": workflow.name,
                 "description": workflow.description,
                 "status": workflow.status,
+                "version": workflow.version,
+                "is_temporal_ready": workflow.is_temporal_ready,
                 "created_at": workflow.created_at
             }
             for workflow in workflows

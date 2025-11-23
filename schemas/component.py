@@ -72,3 +72,24 @@ class ComponentResponse(BaseModel):
     is_active: Optional[bool] = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+
+class ComponentForAI(BaseModel):
+    """Schema for components formatted for AI processing (excludes audit fields)"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    type: str
+    category: Optional[str] = None
+    endpoint_url: str
+    http_method: Optional[str] = None
+    query_template: Optional[str] = None
+    rpc_function: Optional[str] = None
+    auth_type: Optional[str] = "NONE"
+    auth_config: Optional[Dict[str, Any]] = {}
+    request_schema: Optional[Dict[str, Any]] = {}
+    response_schema: Optional[Dict[str, Any]] = {}
+    path_params: Optional[Union[Dict[str, Any], List[Any], List[str]]] = {}
+    query_params: Optional[Dict[str, Any]] = {}
+    version: Optional[str] = "1.0"
+    owner_service: Optional[str] = None

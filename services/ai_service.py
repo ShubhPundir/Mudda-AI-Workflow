@@ -26,6 +26,5 @@ class AIService:
         """
         # Get available components
         components = ComponentService.get_components_for_ai(db)
-        
         # Use the Gemini client to generate the workflow
         return gemini_client.generate_workflow_plan(problem_statement, components)
