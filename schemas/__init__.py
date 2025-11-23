@@ -5,6 +5,7 @@ from .component_schema import (
     ComponentSchema,
     ComponentCreateRequest,
     ComponentResponse,
+    ComponentForSelection,
     ComponentForAI
 )
 from .workflow_schema import (
@@ -20,6 +21,7 @@ __all__ = [
     "ComponentSchema",
     "ComponentCreateRequest", 
     "ComponentResponse",
+    "ComponentForSelection",
     "ComponentForAI",
     "WorkflowStepSchema",
     "WorkflowPlanSchema",

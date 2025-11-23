@@ -74,6 +74,13 @@ class ComponentResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
 
+class ComponentForSelection(BaseModel):
+    """Minimal schema for component selection (only id, name, description)"""
+    id: str
+    name: str
+    description: Optional[str] = None
+
+
 class ComponentForAI(BaseModel):
     """Schema for components formatted for AI processing (excludes audit fields)"""
     id: str

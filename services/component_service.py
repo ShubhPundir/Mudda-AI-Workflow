@@ -4,7 +4,7 @@ Service layer for Component operations
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models import Component
-from schemas import ComponentCreateRequest, ComponentResponse, ComponentForAI
+from schemas import ComponentCreateRequest, ComponentResponse, ComponentForSelection, ComponentForAI
 
 
 class ComponentService:
@@ -62,7 +62,15 @@ class ComponentService:
     @staticmethod
     def get_component(db: Session, component_id: str) -> Optional[ComponentResponse]:
         """Get a component by ID"""
-        component = db.query(Component).filter(Component.id == component_id).first()
+        from uuid import UUID
+        
+        # Convert string ID to UUID object
+        try:
+            uuid_id = UUID(component_id)
+        except ValueError:
+            return None
+        
+        component = db.query(Component).filter(Component.id == uuid_id).first()
         
         if not component:
             return None
@@ -122,6 +130,49 @@ class ComponentService:
             )
             for component in components
         ]
+    
+    @staticmethod
+    def get_components_for_selection(db: Session) -> List[ComponentForSelection]:
+        """Get minimal component info (id, name, description) for component selection"""
+        components = db.query(Component).filter(Component.is_active == True).all()
+        return [
+            ComponentForSelection(
+                id=str(component.id),
+                name=component.name,
+                description=component.description
+            )
+            for component in components
+        ]
+    
+    @staticmethod
+    def get_components_by_ids(db: Session, component_ids: List[str]) -> List[ComponentForAI]:
+        """Get full component details for selected component IDs by reusing get_component"""
+        components_for_ai = []
+        for component_id in component_ids:
+            component_response = ComponentService.get_component(db, component_id)
+            if component_response and component_response.is_active:
+                components_for_ai.append(
+                    ComponentForAI(
+                        id=component_response.id,
+                        name=component_response.name,
+                        description=component_response.description,
+                        type=component_response.type,
+                        category=component_response.category,
+                        endpoint_url=component_response.endpoint_url,
+                        http_method=component_response.http_method,
+                        query_template=component_response.query_template,
+                        rpc_function=component_response.rpc_function,
+                        auth_type=component_response.auth_type,
+                        auth_config=component_response.auth_config,
+                        request_schema=component_response.request_schema,
+                        response_schema=component_response.response_schema,
+                        path_params=component_response.path_params,
+                        query_params=component_response.query_params,
+                        version=component_response.version,
+                        owner_service=component_response.owner_service
+                    )
+                )
+        return components_for_ai
     
     @staticmethod
     def get_components_for_ai(db: Session) -> List[ComponentForAI]:

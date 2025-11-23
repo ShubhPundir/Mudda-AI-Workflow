@@ -15,8 +15,33 @@ class AIService:
     """
     
     @staticmethod
-    def _get_system_prompt() -> str:
-        """Get the system prompt for the AI model"""
+    def _get_component_selection_prompt() -> str:
+        """Get the system prompt for component selection"""
+        return """
+You are "Mudda AI Component Selector", an expert at identifying relevant API components for civic issue resolution.
+
+### TASK
+Given a problem statement, analyze the available components and select ONLY the components that are relevant for solving the issue.
+
+### OUTPUT FORMAT
+Respond ONLY in **valid JSON** matching this schema:
+
+```json
+{
+  "selected_component_ids": ["uuid-1", "uuid-2", "uuid-3"]
+}
+```
+
+### RULES:
+1. Select only components that are directly relevant to solving the problem
+2. Include components for: issue management, notifications, approvals, external services, etc.
+3. Be selective - don't include unnecessary components
+4. Return ONLY valid JSON with the array of selected component IDs
+"""
+
+    @staticmethod
+    def _get_workflow_generation_prompt() -> str:
+        """Get the system prompt for workflow generation"""
         return """
 You are "Mudda AI Plan Maker", an expert government management officer and workflow automation designer.
 
@@ -26,17 +51,17 @@ Your task is to create executable workflow plans that resolve real-world civic i
 ### CONTEXT
 You will be given:
 1. A **problem statement** describing a civic issue
-2. A list of **available components** from the `components` table in PostgreSQL
+2. A list of **selected components** with full details (endpoint URLs, schemas, etc.)
 
 ### OBJECTIVE
-Using the available components, **design an actionable end-to-end plan** to resolve the civic issue.
+Using the provided components, **design an actionable end-to-end plan** to resolve the civic issue.
 The plan must follow a **directed acyclic graph (DAG)** structure, where each step references one component by `id`, defines its inputs, and indicates dependencies.
 
 The workflow must be **ready for orchestration by Temporal**, meaning:
 - Each step can be executed independently by a Temporal worker
 - Inputs and outputs between steps should be defined explicitly
 - Include human approval steps if necessary before sensitive operations
-- If external dependencies are needed, use appropriate components from the list
+- Use the exact endpoint URLs, HTTP methods, and schemas from the provided components
 
 ### OUTPUT FORMAT
 Respond ONLY in **valid JSON** matching this schema:
@@ -89,7 +114,8 @@ Respond ONLY in **valid JSON** matching this schema:
 4. EVERY step MUST have a component_id - no exceptions
 5. Make sure all step dependencies are properly defined
 6. Use template variables like {{issue_id}} for dynamic inputs
-7. Return ONLY valid JSON, no additional text
+7. Use the exact endpoint URLs, HTTP methods, and request/response schemas from the component details
+8. Return ONLY valid JSON, no additional text
 """
 
     @staticmethod
@@ -156,9 +182,69 @@ Respond ONLY in **valid JSON** matching this schema:
                 raise ValueError(f"Step {i} references non-existent component: {step['component_id']}")
 
     @staticmethod
+    def select_components(db: Session, problem_statement: str) -> List[str]:
+        """
+        Step 1: Select relevant components for the problem statement
+        
+        Args:
+            db: Database session
+            problem_statement: Description of the civic issue to resolve
+            
+        Returns:
+            List of selected component IDs
+        """
+        # Get minimal component info (id, name, description only)
+        components = ComponentService.get_components_for_selection(db)
+        
+        if not components:
+            raise ValueError("No active components available in the system")
+        
+        # Convert to dicts for JSON serialization
+        components_dict = [component.model_dump() for component in components]
+        
+        # Create the prompt for component selection
+        selection_prompt = f"""
+Problem Statement: {problem_statement}
+
+Available Components (minimal info):
+{json.dumps(components_dict, indent=2)}
+
+Select the component IDs that are relevant for solving this problem.
+"""
+        
+        try:
+            # Generate response using Gemini
+            system_prompt = AIService._get_component_selection_prompt()
+            response = gemini_client.generate(system_prompt + "\n\n" + selection_prompt)
+            
+            # Extract and serialize JSON from response
+            response_text = AIService._serialize_ai_response(response)
+            
+            # Parse the JSON response
+            selection_result = json.loads(response_text)
+            
+            if "selected_component_ids" not in selection_result:
+                raise ValueError("AI response missing 'selected_component_ids' field")
+            
+            selected_ids = selection_result["selected_component_ids"]
+            
+            if not isinstance(selected_ids, list) or len(selected_ids) == 0:
+                raise ValueError("No components were selected")
+            
+            return selected_ids
+            
+        except json.JSONDecodeError as e:
+            response_text_debug = response_text if 'response_text' in locals() else "No response received"
+            raise ValueError(f"Failed to parse component selection response as JSON: {e}. Response text: {response_text_debug[:500]}")
+        except Exception as e:
+            raise ValueError(f"Failed to select components: {e}")
+
+    @staticmethod
     def generate_workflow_plan(db: Session, problem_statement: str) -> Dict[str, Any]:
         """
-        Generate a workflow plan for the given problem statement
+        Generate a workflow plan for the given problem statement using two-step process:
+        1. Select relevant components (minimal token usage)
+        2. Generate workflow with full component details
         
         Args:
             db: Database session
@@ -167,30 +253,36 @@ Respond ONLY in **valid JSON** matching this schema:
         Returns:
             Dictionary containing the generated workflow plan
         """
-        # Get available components
-        components = ComponentService.get_components_for_ai(db)
+        # Step 1: Select relevant components
+        print("Step 1: Selecting relevant components...")
+        selected_component_ids = AIService.select_components(db, problem_statement)
+        print(f"Selected {len(selected_component_ids)} components: {selected_component_ids}")
         
-        if not components:
-            raise ValueError("No active components available in the system")
+        # Step 2: Get full details for selected components only
+        selected_components = ComponentService.get_components_by_ids(db, selected_component_ids)
         
-        # Convert Pydantic models to dicts for JSON serialization
-        components_dict = [component.model_dump() for component in components]
+        if not selected_components:
+            raise ValueError("Failed to retrieve details for selected components")
         
-        # Create the prompt for Gemini
-        issue_description_prompt = f"""
+        # Convert to dicts for JSON serialization
+        components_dict = [component.model_dump() for component in selected_components]
+        
+        # Create the prompt for workflow generation
+        workflow_prompt = f"""
 Problem Statement: {problem_statement}
 
-Available Components:
+Selected Components (full details):
 {json.dumps(components_dict, indent=2)}
 
-Please generate a workflow plan to resolve this civic issue using the available components.
+Please generate a workflow plan to resolve this civic issue using the selected components.
 Follow the DAG structure and ensure all steps are properly connected.
+Use the exact endpoint URLs, HTTP methods, and schemas from the component details.
 """
         
         try:
             # Generate response using Gemini
-            system_prompt = AIService._get_system_prompt()
-            response = gemini_client.generate(system_prompt + "\n\n" + issue_description_prompt)
+            system_prompt = AIService._get_workflow_generation_prompt()
+            response = gemini_client.generate(system_prompt + "\n\n" + workflow_prompt)
             
             # Extract and serialize JSON from response
             response_text = AIService._serialize_ai_response(response)
