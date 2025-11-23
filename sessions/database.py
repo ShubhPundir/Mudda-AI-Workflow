@@ -1,14 +1,12 @@
 """
 Database connection and session management
 """
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
+from config import settings
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Construct DATABASE_URL from individual components
+DATABASE_URL = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

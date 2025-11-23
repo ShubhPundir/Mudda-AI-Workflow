@@ -11,7 +11,11 @@ class Settings:
     """Application settings"""
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    DB_HOST: str = os.getenv("DB_HOST", "localhost")
+    DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
+    DB_NAME: str = os.getenv("DB_NAME", "mudda_ai_db")
+    DB_USER: str = os.getenv("DB_USER", "username")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "password")
     
     # Gemini AI
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
