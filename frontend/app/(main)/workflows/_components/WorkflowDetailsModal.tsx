@@ -2,6 +2,7 @@
 
 import { Workflow } from '@/lib/type';
 import Modal from '@/components/Modal';
+import WorkflowGraph from './WorkflowGraph';
 
 interface WorkflowDetailsModalProps {
   isOpen: boolean;
@@ -24,6 +25,11 @@ export default function WorkflowDetailsModal({
       size="xl"
     >
       <div className="space-y-6">
+        {/* Workflow Graph */}
+        {workflow.workflow_plan?.steps && workflow.workflow_plan.steps.length > 0 && (
+          <WorkflowGraph steps={workflow.workflow_plan.steps} />
+        )}
+
         <div>
           <h4 className="text-sm font-medium text-gray-500 mb-1">Description</h4>
           <p className="text-gray-900">{workflow.workflow_plan?.description || 'No description'}</p>
