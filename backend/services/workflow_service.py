@@ -62,7 +62,7 @@ class WorkflowService:
             raise ValueError(f"Failed to generate workflow: {str(e)}")
     
     @staticmethod
-    def get_workflow(db: Session, workflow_id: str) -> Optional[Dict[str, Any]]:
+    def get_workflow(db: Session, workflow_id: str) -> Optional[WorkflowGenerationResponse]:
         """
         Get a specific workflow plan by ID
         
@@ -78,25 +78,19 @@ class WorkflowService:
         if not workflow:
             return None
         
-        return {
-            "id": str(workflow.id),
-            "name": workflow.name,
-            "description": workflow.description,
-            "issue_id": str(workflow.issue_id) if workflow.issue_id else None,
-            "plan_json": workflow.plan_json,
-            "ai_model_used": workflow.ai_model_used,
-            "status": workflow.status,
-            "created_by": workflow.created_by,
-            "approved_by": workflow.approved_by,
-            "approval_notes": workflow.approval_notes,
-            "version": workflow.version,
-            "is_temporal_ready": workflow.is_temporal_ready,
-            "created_at": workflow.created_at,
-            "updated_at": workflow.updated_at
-        }
+        # Parse the plan_json to create WorkflowPlanSchema
+        plan_json = workflow.plan_json if workflow.plan_json else {}
+        workflow_plan = WorkflowPlanSchema(**plan_json)
+        
+        return WorkflowGenerationResponse(
+            workflow_id=str(workflow.id),
+            workflow_plan=workflow_plan,
+            status=workflow.status or "DRAFT",
+            created_at=workflow.created_at or datetime.utcnow()
+        )
     
     @staticmethod
-    def list_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[WorkflowGenerationResponse]:
         """
         List all workflow plans
         
@@ -110,18 +104,33 @@ class WorkflowService:
         """
         workflows = db.query(WorkflowPlan).offset(skip).limit(limit).all()
         
-        return [
-            {
-                "id": str(workflow.id),
-                "name": workflow.name,
+        result = []
+        for workflow in workflows:
+            # Parse the plan_json to create WorkflowPlanSchema
+            plan_json = workflow.plan_json if workflow.plan_json else {
+                "workflow_name": workflow.name,
                 "description": workflow.description,
-                "status": workflow.status,
-                "version": workflow.version,
-                "is_temporal_ready": workflow.is_temporal_ready,
-                "created_at": workflow.created_at
+                "steps": []
             }
-            for workflow in workflows
-        ]
+            
+            try:
+                workflow_plan = WorkflowPlanSchema(**plan_json)
+            except Exception:
+                # Fallback if plan_json is malformed
+                workflow_plan = WorkflowPlanSchema(
+                    workflow_name=workflow.name,
+                    description=workflow.description,
+                    steps=[]
+                )
+            
+            result.append(WorkflowGenerationResponse(
+                workflow_id=str(workflow.id),
+                workflow_plan=workflow_plan,
+                status=workflow.status or "DRAFT",
+                created_at=workflow.created_at or datetime.utcnow()
+            ))
+        
+        return result
     
     @staticmethod
     def execute_workflow(db: Session, workflow_id: str, execution_data: Optional[Dict[str, Any]] = None) -> WorkflowExecutionResponse:
