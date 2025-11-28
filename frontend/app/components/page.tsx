@@ -90,11 +90,12 @@ export default function ComponentsPage() {
     {
       key: 'name',
       header: 'Component Name',
+      width: 'min-w-[280px]',
       render: (component: Component) => (
-        <div>
-          <div className="font-medium text-gray-900">{component.name}</div>
+        <div className="min-w-0">
+          <div className="font-semibold text-gray-900 truncate">{component.name}</div>
           {component.description && (
-            <div className="text-gray-500 text-xs mt-1">{component.description}</div>
+            <div className="text-gray-500 text-xs mt-1 line-clamp-2">{component.description}</div>
           )}
         </div>
       ),
@@ -102,8 +103,9 @@ export default function ComponentsPage() {
     {
       key: 'type',
       header: 'Type',
+      width: 'w-28',
       render: (component: Component) => (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+        <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-200">
           {component.type}
         </span>
       ),
@@ -111,27 +113,35 @@ export default function ComponentsPage() {
     {
       key: 'category',
       header: 'Category',
+      width: 'w-40',
       render: (component: Component) => (
-        <span className="text-gray-600">{component.category || 'N/A'}</span>
+        <span className="text-gray-600 font-medium">{component.category || 'N/A'}</span>
       ),
     },
     {
       key: 'endpoint_url',
       header: 'Endpoint',
+      width: 'min-w-[300px]',
       render: (component: Component) => (
-        <span className="text-sm text-gray-600 font-mono truncate max-w-xs">
-          {component.endpoint_url}
-        </span>
+        <div className="flex items-center space-x-2 min-w-0">
+          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          <span className="text-sm text-gray-600 font-mono truncate">
+            {component.endpoint_url}
+          </span>
+        </div>
       ),
     },
     {
       key: 'is_active',
       header: 'Status',
+      width: 'w-28',
       render: (component: Component) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${
           component.is_active 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-gray-100 text-gray-800'
+            ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+            : 'bg-gray-100 text-gray-700 border-gray-200'
         }`}>
           {component.is_active ? 'Active' : 'Inactive'}
         </span>
@@ -140,11 +150,11 @@ export default function ComponentsPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="p-8">
+      <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Components</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Components</h1>
+          <p className="text-gray-500">
             Manage API components for workflow integration
           </p>
         </div>
@@ -152,21 +162,33 @@ export default function ComponentsPage() {
           onClick={() => setIsCreateModalOpen(true)}
           variant="primary"
           size="lg"
+          className="flex items-center space-x-2"
         >
-          Create Component
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Create Component</span>
         </Button>
       </div>
 
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center space-x-2 shadow-sm">
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <p className="mt-2 text-gray-600">Loading components...</p>
+        <div className="text-center py-16">
+          <div className="inline-block relative">
+            <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary-100 rounded-full"></div>
+            </div>
+          </div>
+          <p className="mt-4 text-gray-600 font-medium">Loading components...</p>
         </div>
       ) : (
         <Table
@@ -207,7 +229,7 @@ export default function ComponentsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2.5">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -215,13 +237,13 @@ export default function ComponentsPage() {
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
               placeholder="Component name"
             />
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2.5">
               Description
             </label>
             <textarea
@@ -229,21 +251,21 @@ export default function ComponentsPage() {
               rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none"
               placeholder="What the API/component does"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="type" className="block text-sm font-semibold text-gray-700 mb-2.5">
                 Type <span className="text-red-500">*</span>
               </label>
               <select
                 id="type"
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
               >
                 <option value="REST">REST</option>
                 <option value="RPC">RPC</option>
@@ -252,7 +274,7 @@ export default function ComponentsPage() {
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2.5">
                 Category
               </label>
               <input
@@ -260,14 +282,14 @@ export default function ComponentsPage() {
                 id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                 placeholder="e.g., Issue Management"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="endpoint_url" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="endpoint_url" className="block text-sm font-semibold text-gray-700 mb-2.5">
               Endpoint URL <span className="text-red-500">*</span>
             </label>
             <input
@@ -275,21 +297,21 @@ export default function ComponentsPage() {
               id="endpoint_url"
               value={formData.endpoint_url}
               onChange={(e) => setFormData({ ...formData, endpoint_url: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 font-mono text-sm"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm transition-all"
               placeholder="https://api.example.com/endpoint/{id}"
             />
           </div>
 
           {formData.type === 'REST' && (
             <div>
-              <label htmlFor="http_method" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="http_method" className="block text-sm font-semibold text-gray-700 mb-2.5">
                 HTTP Method
               </label>
               <select
                 id="http_method"
                 value={formData.http_method}
                 onChange={(e) => setFormData({ ...formData, http_method: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
               >
                 <option value="GET">GET</option>
                 <option value="POST">POST</option>
@@ -301,14 +323,14 @@ export default function ComponentsPage() {
           )}
 
           <div>
-            <label htmlFor="auth_type" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="auth_type" className="block text-sm font-semibold text-gray-700 mb-2.5">
               Authentication Type
             </label>
             <select
               id="auth_type"
               value={formData.auth_type}
               onChange={(e) => setFormData({ ...formData, auth_type: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
             >
               <option value="NONE">None</option>
               <option value="API_KEY">API Key</option>
@@ -319,12 +341,15 @@ export default function ComponentsPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm flex items-center space-x-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 pt-2">
             <Button
               variant="outline"
               onClick={() => {

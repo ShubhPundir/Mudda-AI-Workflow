@@ -72,12 +72,13 @@ export default function WorkflowsPage() {
     {
       key: 'workflow_plan',
       header: 'Workflow Name',
+      width: 'min-w-[300px]',
       render: (workflow: Workflow) => (
-        <div>
-          <div className="font-medium text-gray-900">
+        <div className="min-w-0">
+          <div className="font-semibold text-gray-900 truncate">
             {workflow?.workflow_plan?.workflow_name || 'Unnamed Workflow'}
           </div>
-          <div className="text-gray-500 text-xs mt-1">
+          <div className="text-gray-500 text-xs mt-1 line-clamp-2">
             {workflow?.workflow_plan?.description || 'No description'}
           </div>
         </div>
@@ -86,11 +87,14 @@ export default function WorkflowsPage() {
     {
       key: 'status',
       header: 'Status',
+      width: 'w-32',
       render: (workflow: Workflow) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          workflow.status === 'active' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-gray-100 text-gray-800'
+        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+          workflow.status === 'active' || workflow.status === 'ACTIVE'
+            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+            : workflow.status === 'DRAFT'
+            ? 'bg-amber-100 text-amber-700 border border-amber-200'
+            : 'bg-gray-100 text-gray-700 border border-gray-200'
         }`}>
           {workflow.status}
         </span>
@@ -99,27 +103,40 @@ export default function WorkflowsPage() {
     {
       key: 'created_at',
       header: 'Created At',
+      width: 'w-40',
       render: (workflow: Workflow) => (
-        <span>{new Date(workflow.created_at).toLocaleDateString()}</span>
+        <span className="text-gray-600 font-medium">
+          {new Date(workflow.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })}
+        </span>
       ),
     },
     {
       key: 'steps',
       header: 'Steps',
+      width: 'w-24',
       render: (workflow: Workflow) => (
-        <span className="text-gray-600">
-          {workflow?.workflow_plan?.steps?.length || 0} steps
-        </span>
+        <div className="flex items-center space-x-1">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span className="text-gray-700 font-medium">
+            {workflow?.workflow_plan?.steps?.length || 0}
+          </span>
+        </div>
       ),
     },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="p-8">
+      <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Workflows</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Workflows</h1>
+          <p className="text-gray-500">
             Manage and generate AI-powered workflows for civic issues
           </p>
         </div>
@@ -127,21 +144,33 @@ export default function WorkflowsPage() {
           onClick={() => setIsGenerateModalOpen(true)}
           variant="primary"
           size="lg"
+          className="flex items-center space-x-2"
         >
-          Generate Workflow
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Generate Workflow</span>
         </Button>
       </div>
 
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center space-x-2 shadow-sm">
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <p className="mt-2 text-gray-600">Loading workflows...</p>
+        <div className="text-center py-16">
+          <div className="inline-block relative">
+            <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary-100 rounded-full"></div>
+            </div>
+          </div>
+          <p className="mt-4 text-gray-600 font-medium">Loading workflows...</p>
         </div>
       ) : (
         <Table
@@ -186,11 +215,14 @@ export default function WorkflowsPage() {
             />
           </div>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm flex items-center space-x-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 pt-2">
             <Button
               variant="outline"
               onClick={() => {
