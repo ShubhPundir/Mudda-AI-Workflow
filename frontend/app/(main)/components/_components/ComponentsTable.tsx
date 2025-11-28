@@ -1,6 +1,6 @@
 'use client';
 
-import { Component } from '@/lib/api';
+import { Component } from '@/lib/type';
 import Table from '@/components/Table';
 
 interface ComponentsTableProps {

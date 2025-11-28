@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { workflowApi } from '@/lib/api';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // GET /api/workflows/[id] - Get a specific workflow
 export async function GET(
@@ -7,20 +16,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const workflow = await workflowApi.getById(params.id);
-    
-    if (!workflow) {
+    const response = await apiClient.get(`/workflows/${params.id}`);
+    return NextResponse.json(response.data);
+  } catch (error: any) {
+    if (error.response?.status === 404) {
       return NextResponse.json(
         { error: 'Workflow not found' },
         { status: 404 }
       );
     }
-
-    return NextResponse.json(workflow);
-  } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch workflow' },
-      { status: 500 }
+      { error: error.response?.data?.detail || error.message || 'Failed to fetch workflow' },
+      { status: error.response?.status || 500 }
     );
   }
 }

@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { componentApi } from '@/lib/api';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // GET /api/components - List all components
 export async function GET(request: NextRequest) {
@@ -7,12 +16,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const activeOnly = searchParams.get('active_only') !== 'false';
 
-    const components = await componentApi.getAll(activeOnly);
-    return NextResponse.json(components);
+    const response = await apiClient.get('/components', {
+      params: { active_only: activeOnly },
+    });
+    return NextResponse.json(response.data);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch components' },
-      { status: 500 }
+      { error: error.response?.data?.detail || error.message || 'Failed to fetch components' },
+      { status: error.response?.status || 500 }
     );
   }
 }
@@ -22,12 +33,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const component = await componentApi.create(body);
-    return NextResponse.json(component);
+    const response = await apiClient.post('/components', body);
+    return NextResponse.json(response.data);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'Failed to create component' },
-      { status: 500 }
+      { error: error.response?.data?.detail || error.message || 'Failed to create component' },
+      { status: error.response?.status || 500 }
     );
   }
 }

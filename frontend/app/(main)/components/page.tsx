@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { componentApi, Component } from '@/lib/api';
-import ComponentsHeader from './components/ComponentsHeader';
-import ComponentsTable from './components/ComponentsTable';
-import CreateComponentModal from './components/CreateComponentModal';
-import ComponentDetailsModal from './components/ComponentDetailsModal';
-import LoadingState from '../workflows/components/LoadingState';
-import ErrorAlert from '../workflows/components/ErrorAlert';
+import { Component } from '@/lib/type';
+import ComponentsHeader from './_components/ComponentsHeader';
+import ComponentsTable from './_components/ComponentsTable';
+import CreateComponentModal from './_components/CreateComponentModal';
+import ComponentDetailsModal from './_components/ComponentDetailsModal';
+import LoadingState from '../workflows/_components/LoadingState';
+import ErrorAlert from '../workflows/_components/ErrorAlert';
 
 export default function ComponentsPage() {
   const [components, setComponents] = useState<Component[]>([]);
@@ -26,11 +26,16 @@ export default function ComponentsPage() {
   const fetchComponents = async () => {
     try {
       setLoading(true);
-      const data = await componentApi.getAll(true);
+      const response = await fetch('/api/components?active_only=true');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch components');
+      }
+      const data = await response.json();
       setComponents(data);
       setError(null);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch components');
+      setError(err.message || 'Failed to fetch components');
       console.error('Error fetching components:', err);
     } finally {
       setLoading(false);
@@ -41,11 +46,22 @@ export default function ComponentsPage() {
     try {
       setIsCreating(true);
       setCreateError(null);
-      const newComponent = await componentApi.create(formData);
+      const response = await fetch('/api/components', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create component');
+      }
+      const newComponent = await response.json();
       setComponents([newComponent, ...components]);
       setIsCreateModalOpen(false);
     } catch (err: any) {
-      setCreateError(err.response?.data?.detail || 'Failed to create component');
+      setCreateError(err.message || 'Failed to create component');
       console.error('Error creating component:', err);
     } finally {
       setIsCreating(false);
@@ -54,11 +70,16 @@ export default function ComponentsPage() {
 
   const handleViewDetails = async (component: Component) => {
     try {
-      const fullComponent = await componentApi.getById(component.id);
+      const response = await fetch(`/api/components/${component.id}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch component details');
+      }
+      const fullComponent = await response.json();
       setSelectedComponent(fullComponent);
       setIsModalOpen(true);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch component details');
+      setError(err.message || 'Failed to fetch component details');
       console.error('Error fetching component details:', err);
     }
   };

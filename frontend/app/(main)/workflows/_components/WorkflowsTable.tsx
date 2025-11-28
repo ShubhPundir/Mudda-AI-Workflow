@@ -1,6 +1,6 @@
 'use client';
 
-import { Workflow } from '@/lib/api';
+import { Workflow } from '@/lib/type';
 import Table from '@/components/Table';
 
 interface WorkflowsTableProps {
@@ -18,9 +18,6 @@ export default function WorkflowsTable({ workflows, onViewDetails }: WorkflowsTa
         <div className="min-w-0">
           <div className="font-semibold text-gray-900 truncate">
             {workflow?.workflow_plan?.workflow_name || 'Unnamed Workflow'}
-          </div>
-          <div className="text-gray-500 text-xs mt-1 line-clamp-2">
-            {workflow?.workflow_plan?.description || 'No description'}
           </div>
         </div>
       ),

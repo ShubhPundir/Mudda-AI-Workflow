@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { workflowApi } from '@/lib/api';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // GET /api/workflows - List all workflows
 export async function GET(request: NextRequest) {
@@ -8,12 +17,14 @@ export async function GET(request: NextRequest) {
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
 
-    const workflows = await workflowApi.getAll(skip, limit);
-    return NextResponse.json(workflows);
+    const response = await apiClient.get('/workflows', {
+      params: { skip, limit },
+    });
+    return NextResponse.json(response.data);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch workflows' },
-      { status: 500 }
+      { error: error.response?.data?.detail || error.message || 'Failed to fetch workflows' },
+      { status: error.response?.status || 500 }
     );
   }
 }
@@ -31,12 +42,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const workflow = await workflowApi.generate({ problem_statement });
-    return NextResponse.json(workflow);
+    const response = await apiClient.post('/workflows/generate', { problem_statement });
+    return NextResponse.json(response.data);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'Failed to generate workflow' },
-      { status: 500 }
+      { error: error.response?.data?.detail || error.message || 'Failed to generate workflow' },
+      { status: error.response?.status || 500 }
     );
   }
 }

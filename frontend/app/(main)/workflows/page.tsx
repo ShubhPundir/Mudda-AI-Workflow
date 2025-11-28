@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { workflowApi, Workflow } from '@/lib/api';
-import WorkflowsHeader from './components/WorkflowsHeader';
-import WorkflowsTable from './components/WorkflowsTable';
-import GenerateWorkflowModal from './components/GenerateWorkflowModal';
-import WorkflowDetailsModal from './components/WorkflowDetailsModal';
-import LoadingState from './components/LoadingState';
-import ErrorAlert from './components/ErrorAlert';
+import { Workflow } from '@/lib/type';
+import WorkflowsHeader from './_components/WorkflowsHeader';
+import WorkflowsTable from './_components/WorkflowsTable';
+import GenerateWorkflowModal from './_components/GenerateWorkflowModal';
+import WorkflowDetailsModal from './_components/WorkflowDetailsModal';
+import LoadingState from './_components/LoadingState';
+import ErrorAlert from './_components/ErrorAlert';
 
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -26,11 +26,16 @@ export default function WorkflowsPage() {
   const fetchWorkflows = async () => {
     try {
       setLoading(true);
-      const data = await workflowApi.getAll();
+      const response = await fetch('/api/workflows');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch workflows');
+      }
+      const data = await response.json();
       setWorkflows(data);
       setError(null);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch workflows');
+      setError(err.message || 'Failed to fetch workflows');
       console.error('Error fetching workflows:', err);
     } finally {
       setLoading(false);
@@ -41,13 +46,22 @@ export default function WorkflowsPage() {
     try {
       setIsGenerating(true);
       setGenerateError(null);
-      const newWorkflow = await workflowApi.generate({
-        problem_statement: problemStatement,
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ problem_statement: problemStatement }),
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate workflow');
+      }
+      const newWorkflow = await response.json();
       setWorkflows([newWorkflow, ...workflows]);
       setIsGenerateModalOpen(false);
     } catch (err: any) {
-      setGenerateError(err.response?.data?.detail || 'Failed to generate workflow');
+      setGenerateError(err.message || 'Failed to generate workflow');
       console.error('Error generating workflow:', err);
     } finally {
       setIsGenerating(false);
@@ -56,11 +70,16 @@ export default function WorkflowsPage() {
 
   const handleViewDetails = async (workflow: Workflow) => {
     try {
-      const fullWorkflow = await workflowApi.getById(workflow.workflow_id);
+      const response = await fetch(`/api/workflows/${workflow.workflow_id}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch workflow details');
+      }
+      const fullWorkflow = await response.json();
       setSelectedWorkflow(fullWorkflow);
       setIsModalOpen(true);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch workflow details');
+      setError(err.message || 'Failed to fetch workflow details');
       console.error('Error fetching workflow details:', err);
     }
   };

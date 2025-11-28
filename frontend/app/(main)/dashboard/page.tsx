@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardHeader from './components/DashboardHeader';
-import StatsGrid from './components/StatsGrid';
-import GeographicMapSection from './components/GeographicMapSection';
-import RecentActivity from './components/RecentActivity';
-import ResolutionTrend from './components/ResolutionTrend';
-import IssueCategories from './components/IssueCategories';
+import DashboardHeader from './_components/DashboardHeader';
+import StatsGrid from './_components/StatsGrid';
+import GeographicMapSection from './_components/GeographicMapSection';
+import RecentActivity from './_components/RecentActivity';
+import ResolutionTrend from './_components/ResolutionTrend';
+import IssueCategories from './_components/IssueCategories';
 
 // Static data for demonstration
 const staticAnalytics = {
