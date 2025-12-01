@@ -13,6 +13,7 @@ from schemas import (
     WorkflowExecutionRequest,
     WorkflowExecutionResponse
 )
+from typing import List
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
@@ -46,7 +47,7 @@ async def generate_workflow(
         )
 
 
-@router.get("/{workflow_id}")
+@router.get("/{workflow_id}", response_model=WorkflowGenerationResponse)
 async def get_workflow(
     workflow_id: str,
     db: Session = Depends(get_db)
@@ -80,7 +81,7 @@ async def get_workflow(
         )
 
 
-@router.get("")
+@router.get("", response_model=List[WorkflowGenerationResponse])
 async def list_workflows(
     skip: int = 0,
     limit: int = 100,
