@@ -6,6 +6,15 @@ from sqlalchemy.orm import Session
 from models import Component
 from schemas import ComponentCreateRequest, ComponentResponse, ComponentForSelection, ComponentForAI
 
+'''
+NOTE: I have added MCP like tools for System orchestration
+ which are very much like API calls or microservices, 
+ like sending email, booking something, 
+ each of them have a reply to it as well. 
+ So whenever each component gets executed, 
+ it replies back and leaves linear paths inside 
+ each component task of system orchestration service
+'''
 
 class ComponentService:
     """Service class for Component operations"""
