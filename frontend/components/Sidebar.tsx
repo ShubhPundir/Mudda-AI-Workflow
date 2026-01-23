@@ -70,11 +70,10 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center space-x-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                  active
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/40'
-                    : 'text-blue-700/80 hover:bg-blue-100/60 hover:text-blue-800'
-                }`}
+                className={`flex items-center space-x-4 px-4 py-3 rounded-xl transition-all duration-200 group ${active
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/40'
+                  : 'text-blue-700/80 hover:bg-blue-100/60 hover:text-blue-800'
+                  }`}
               >
                 <div className={`flex-shrink-0 ${active ? 'text-white' : 'text-blue-500/70 group-hover:text-blue-600'}`}>
                   {item.icon}
@@ -91,7 +90,7 @@ export default function Sidebar() {
         {/* Footer */}
         <div className="px-4 py-6 border-t border-blue-200/60 bg-white/30 backdrop-blur-sm">
           <div className="text-center">
-            <p className="text-xs text-blue-600/60 font-medium">Version 1.0.0</p>
+            <p className="text-xs text-blue-600/60 font-medium">Version 0.2.6</p>
           </div>
         </div>
       </div>

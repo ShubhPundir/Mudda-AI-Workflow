@@ -68,20 +68,8 @@ export default function WorkflowsPage() {
     }
   };
 
-  const handleViewDetails = async (workflow: Workflow) => {
-    try {
-      const response = await fetch(`/api/workflows/${workflow.workflow_id}`);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch workflow details');
-      }
-      const fullWorkflow = await response.json();
-      setSelectedWorkflow(fullWorkflow);
-      setIsModalOpen(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch workflow details');
-      console.error('Error fetching workflow details:', err);
-    }
+  const handleViewDetails = (workflow: Workflow) => {
+    window.location.href = `/workflows/${workflow.workflow_id}`;
   };
 
   return (

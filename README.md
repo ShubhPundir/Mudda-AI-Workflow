@@ -28,21 +28,6 @@ Once a plan is generated and approved, it is not executed by a simple script. It
 *   **Human-in-the-Loop**: The workflow supports long-running processes, such as waiting for a human officer to approve a budget or verify a fix, which might take days.
 *   **State Management**: Every step's input and output is recorded, allowing full auditability of the government process.
 
-### 📂 Backend Structure
-
-```
-backend/
-├── main.py                 # FastAPI application entry point
-├── temporal_workflows.py   # Temporal workflow definitions (The orchestration logic)
-├── temporal_worker.py      # Worker that processes the workflow tasks
-├── services/
-│   ├── ai_service.py       # Contains the 2-Agent Logic (Component Selector & Plan Maker)
-│   ├── workflow_service.py # detailed management of workflow lifecycle 
-│   └── component_service.py# Management of available system tools/components
-├── models/                 # Database models (SQLAlchemy)
-├── routers/                # API endpoints
-└── sessions/               # Database and AI client connections
-```
 
 ### 🚀 How it Works Flow
 
