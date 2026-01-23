@@ -10,7 +10,18 @@ from models import Base
 from routers import component_router, workflow_router, health_router
 
 # Create database tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
+
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # NOTE: don't use this for now
+
 
 # Initialize FastAPI app
 app = FastAPI(
