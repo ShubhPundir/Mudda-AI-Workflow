@@ -1,5 +1,5 @@
 // Export all workflow-loader components
-export { default as WorkflowGenerationLoader } from './WorkflowGenerationLoader';
+export { default as WorkflowGenerationLoader } from './Main';
 export { AgentCard } from './AgentCard';
 export { ProgressTimeline } from './ProgressTimeline';
 export { ComponentGrid } from './ComponentGrid';
