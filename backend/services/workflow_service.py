@@ -63,6 +63,41 @@ class WorkflowService:
             raise ValueError(f"Failed to generate workflow: {str(e)}")
     
     @staticmethod
+    async def update_workflow(db: AsyncSession, workflow_id: str, workflow_plan_schema: WorkflowPlanSchema) -> Optional[WorkflowGenerationResponse]:
+        """
+        Update an existing workflow plan
+        
+        Args:
+            db: Database session
+            workflow_id: UUID of the workflow plan
+            workflow_plan_schema: New workflow plan data
+            
+        Returns:
+            Updated workflow plan details or None if not found
+        """
+        result = await db.execute(select(WorkflowPlan).filter(WorkflowPlan.id == workflow_id))
+        workflow = result.scalars().first()
+        
+        if not workflow:
+            return None
+            
+        # Update the plan_json
+        workflow.plan_json = workflow_plan_schema.model_dump()
+        # Also update top-level fields if they changed
+        workflow.name = workflow_plan_schema.workflow_name
+        workflow.description = workflow_plan_schema.description
+        
+        await db.commit()
+        await db.refresh(workflow)
+        
+        return WorkflowGenerationResponse(
+            workflow_id=str(workflow.id),
+            workflow_plan=workflow_plan_schema,
+            status=workflow.status or "DRAFT",
+            created_at=workflow.created_at or datetime.utcnow()
+        )
+    
+    @staticmethod
     async def get_workflow(db: AsyncSession, workflow_id: str) -> Optional[WorkflowGenerationResponse]:
         """
         Get a specific workflow plan by ID

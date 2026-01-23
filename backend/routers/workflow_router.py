@@ -11,7 +11,8 @@ from schemas import (
     ProblemStatementRequest,
     WorkflowGenerationResponse,
     WorkflowExecutionRequest,
-    WorkflowExecutionResponse
+    WorkflowExecutionResponse,
+    WorkflowPlanSchema
 )
 from typing import List
 
@@ -78,6 +79,42 @@ async def get_workflow(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get workflow: {str(e)}"
+        )
+
+
+@router.put("/{workflow_id}", response_model=WorkflowGenerationResponse)
+async def update_workflow(
+    workflow_id: str,
+    workflow_plan: WorkflowPlanSchema,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update a workflow plan
+    
+    Args:
+        workflow_id: UUID of the workflow plan
+        workflow_plan: New workflow plan data
+        db: Database session
+        
+    Returns:
+        Updated workflow plan details
+    """
+    try:
+        updated_workflow = await WorkflowService.update_workflow(db, workflow_id, workflow_plan)
+        
+        if not updated_workflow:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Workflow plan not found"
+            )
+            
+        return updated_workflow
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update workflow: {str(e)}"
         )
 
 
