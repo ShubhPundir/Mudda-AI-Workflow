@@ -96,97 +96,6 @@ The Mudda AI Workflow Platform is built on a modern, high-performance, and scala
 | **psycopg2-binary** | Database Driver | PostgreSQL database adapter. | Facilitates robust and efficient connection to the relational database for storing model data. |
 
 ---
-
-## 📁 Project Structure
-
-The platform is structured into distinct `frontend` (React/Next.js) and `backend` (FastAPI/Python) microservices, reflecting its Microservices Architecture.
-
-```
-📂 ShubhPundir-Mudda-AI-Workflow-e142bad/
-├── 📂 frontend/                            # Next.js Application (UI)
-│   ├── 📄 package.json                     # Frontend dependencies
-│   ├── 📄 next.config.js                   # Next.js configuration
-│   ├── 📄 tailwind.config.js               # Tailwind CSS configuration
-│   ├── 📂 lib/
-│   │   └── 📄 type.ts                     # Shared TypeScript types
-│   ├── 📂 app/                            # Application core files
-│   │   ├── 📄 globals.css                 # Global styles
-│   │   ├── 📄 layout.tsx                  # Root layout component
-│   │   ├── 📄 page.tsx                    # Home page entry point
-│   │   ├── 📂 (main)/                     # Main application groups
-│   │   │   ├── 📂 workflows/              # Workflow Management Pages
-│   │   │   │   ├── 📄 layout.tsx
-│   │   │   │   ├── 📄 page.tsx
-│   │   │   │   └── 📂 _components/        # Workflow-specific UI elements
-│   │   │   │       ├── 📄 WorkflowDetailsModal.tsx
-│   │   │   │       ├── 📄 GenerateWorkflowModal.tsx
-│   │   │   │       ├── 📄 WorkflowsHeader.tsx
-│   │   │   │       ├── 📄 WorkflowsTable.tsx
-│   │   │   │       ├── 📄 WorkflowGraph.tsx      # Visualization component
-│   │   │   │       ├── 📄 LoadingState.tsx
-│   │   │   │       └── 📄 ErrorAlert.tsx
-│   │   │   ├── 📂 components/             # Component Library Management
-│   │   │   │   ├── 📄 layout.tsx
-│   │   │   │   ├── 📄 page.tsx
-│   │   │   │   └── 📂 _components/
-│   │   │   │       ├── 📄 ComponentsHeader.tsx
-│   │   │   │       ├── 📄 ComponentsTable.tsx
-│   │   │   │       ├── 📄 CreateComponentModal.tsx
-│   │   │   │       └── 📄 ComponentDetailsModal.tsx
-│   │   │   └── 📂 dashboard/              # Analytics and Metrics Dashboard
-│   │   │       ├── 📄 layout.tsx
-│   │   │       ├── 📄 page.tsx
-│   │   │       └── 📂 _components/        # Dashboard widgets
-│   │   │           ├── 📄 StatsGrid.tsx
-│   │   │           ├── 📄 IssueCategories.tsx
-│   │   │           ├── 📄 ResolutionTrend.tsx
-│   │   │           ├── 📄 StatCard.tsx
-│   │   │           ├── 📄 RecentActivity.tsx
-│   │   │           ├── 📄 DashboardHeader.tsx
-│   │   │           └── 📄 GeographicMapSection.tsx
-│   │   └── 📂 api/                        # Frontend API routes (Next.js API routes)
-│   │       ├── 📂 workflows/
-│   │       │   ├── 📄 route.ts
-│   │       │   └── 📂 [id]/
-│   │       │       └── 📄 route.ts
-│   │       └── 📂 components/
-│   │           ├── 📄 route.ts
-│   │           └── 📂 [id]/
-│   │               └── 📄 route.ts
-│   └── 📂 components/                     # Reusable foundational UI components
-│       ├── 📄 Sidebar.tsx
-│       ├── 📄 Modal.tsx
-│       ├── 📄 GeographicMap.tsx
-│       ├── 📄 Button.tsx
-│       └── 📄 Table.tsx
-├── 📂 backend/                             # FastAPI Application (API & Logic)
-│   ├── 📄 requirements.txt                 # Python dependencies
-│   ├── 📄 config.py                        # Application settings (Settings class)
-│   ├── 📄 temporal_worker.py               # Temporal worker service
-│   ├── 📄 temporal_workflows.py            # Temporal workflow definitions (MuddaWorkflow class)
-│   ├── 📄 main.py                          # FastAPI application entry point
-│   ├── 📄 example_usage.py                 # Script for testing workflow generation and API endpoints
-│   ├── 📂 services/                        # Business logic layer
-│   │   ├── 📄 ai_service.py                # Core logic for AI planning (generate_workflow_plan)
-│   │   ├── 📄 workflow_service.py          # CRUD and execution logic for workflows
-│   │   └── 📄 component_service.py         # CRUD logic for components
-│   ├── 📂 models/                          # SQLAlchemy database models
-│   │   ├── 📄 workflow_execution.py        # Model for execution tracking
-│   │   ├── 📄 component.py                 # Model for reusable API components
-│   │   └── 📄 workflow_plan.py             # Model for generated workflow plans
-│   ├── 📂 schemas/                         # Pydantic schemas for data validation
-│   │   ├── 📄 component_schema.py          # Schemas for component requests/responses
-│   │   └── 📄 workflow_schema.py           # Schemas for workflow plans/steps/execution
-│   ├── 📂 routers/                         # FastAPI routing definitions
-│   │   ├── 📄 health_router.py
-│   │   ├── 📄 workflow_router.py
-│   │   └── 📄 component_router.py
-│   └── 📂 sessions/                        # External connection management
-│       ├── 📄 gemini_client.py             # Low-level client for Gemini AI interaction
-│       └── 📄 database.py                  # Database session dependency injector
-└── 📄 README.md
-```
-
 ---
 
 ## 🚀 Getting Started
@@ -374,7 +283,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-<p align="center">Made with ❤️ by the ShubhPundir-Mudda-AI-Workflow Team</p>
+<p align="center">Made with ❤️ by the Shubh Pundir</p>
 <p align="center">
   <a href="#">⬆️ Back to Top</a>
 </p>
