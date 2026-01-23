@@ -17,7 +17,7 @@ from datetime import datetime
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
-
+# TODO: this must be transferred into workflow_service.py for logic and workflow_router.py for entry point 
 async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> AsyncGenerator[str, None]:
     """
     Generate Server-Sent Events stream for workflow generation progress.
