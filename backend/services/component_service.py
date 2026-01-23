@@ -2,7 +2,8 @@
 Service layer for Component operations
 """
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from models import Component
 from schemas import ComponentCreateRequest, ComponentResponse, ComponentForSelection, ComponentForAI
 
@@ -20,7 +21,7 @@ class ComponentService:
     """Service class for Component operations"""
     
     @staticmethod
-    def create_component(db: Session, component_data: ComponentCreateRequest) -> ComponentResponse:
+    async def create_component(db: AsyncSession, component_data: ComponentCreateRequest) -> ComponentResponse:
         """Create a new component"""
         component = Component(
             name=component_data.name,
@@ -42,8 +43,8 @@ class ComponentService:
         )
         
         db.add(component)
-        db.commit()
-        db.refresh(component)
+        await db.commit()
+        await db.refresh(component)
         
         return ComponentResponse(
             id=str(component.id),
@@ -69,7 +70,7 @@ class ComponentService:
         )
     
     @staticmethod
-    def get_component(db: Session, component_id: str) -> Optional[ComponentResponse]:
+    async def get_component(db: AsyncSession, component_id: str) -> Optional[ComponentResponse]:
         """Get a component by ID"""
         from uuid import UUID
         
@@ -79,7 +80,8 @@ class ComponentService:
         except ValueError:
             return None
         
-        component = db.query(Component).filter(Component.id == uuid_id).first()
+        result = await db.execute(select(Component).filter(Component.id == uuid_id))
+        component = result.scalars().first()
         
         if not component:
             return None
@@ -109,11 +111,11 @@ class ComponentService:
     
     
     @staticmethod
-    def get_components_by_ids(db: Session, component_ids: List[str]) -> List[ComponentForAI]:
+    async def get_components_by_ids(db: AsyncSession, component_ids: List[str]) -> List[ComponentForAI]:
         """Get full component details for selected component IDs by reusing get_component"""
         components_for_ai = []
         for component_id in component_ids:
-            component_response = ComponentService.get_component(db, component_id)
+            component_response = await ComponentService.get_component(db, component_id)
             if component_response and component_response.is_active:
                 components_for_ai.append(
                     ComponentForAI(
@@ -139,12 +141,13 @@ class ComponentService:
         return components_for_ai
 
     @staticmethod
-    def list_components(db: Session, active_only: bool = True) -> List[ComponentResponse]:
+    async def list_components(db: AsyncSession, active_only: bool = True) -> List[ComponentResponse]:
         """List all components"""
-        query = db.query(Component)
+        query = select(Component)
         if active_only:
             query = query.filter(Component.is_active == True)
-        components = query.all()
+        result = await db.execute(query)
+        components = result.scalars().all()
         return [
             ComponentResponse(
                 id=str(component.id),
@@ -172,9 +175,10 @@ class ComponentService:
         ]
     
     @staticmethod
-    def get_components_for_selection(db: Session) -> List[ComponentForSelection]:
+    async def get_components_for_selection(db: AsyncSession) -> List[ComponentForSelection]:
         """Get minimal component info (id, name, description) for component selection"""
-        components = db.query(Component).filter(Component.is_active == True).all()
+        result = await db.execute(select(Component).filter(Component.is_active == True))
+        components = result.scalars().all()
         return [
             ComponentForSelection(
                 id=str(component.id),

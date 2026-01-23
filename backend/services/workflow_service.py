@@ -2,7 +2,8 @@
 Service layer for Workflow operations
 """
 from typing import Dict, Any, Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from models import WorkflowPlan, WorkflowExecution
 from schemas import (
     WorkflowPlanSchema, 
@@ -18,7 +19,7 @@ class WorkflowService:
     """Service class for Workflow operations"""
     
     @staticmethod
-    def generate_workflow(db: Session, request: ProblemStatementRequest) -> WorkflowGenerationResponse:
+    async def generate_workflow(db: AsyncSession, request: ProblemStatementRequest) -> WorkflowGenerationResponse:
         """
         Generate a workflow plan for a civic issue
         
@@ -31,7 +32,7 @@ class WorkflowService:
         """
         try:
             # Generate the workflow plan using AI
-            workflow_json = AIService.generate_workflow_plan(db, request.problem_statement)
+            workflow_json = await AIService.generate_workflow_plan(db, request.problem_statement)
             
             # Save to database
             workflow_plan = WorkflowPlan(
@@ -46,8 +47,8 @@ class WorkflowService:
             )
             
             db.add(workflow_plan)
-            db.commit()
-            db.refresh(workflow_plan)
+            await db.commit()
+            await db.refresh(workflow_plan)
             
             return WorkflowGenerationResponse(
                 workflow_id=str(workflow_plan.id),
@@ -62,7 +63,7 @@ class WorkflowService:
             raise ValueError(f"Failed to generate workflow: {str(e)}")
     
     @staticmethod
-    def get_workflow(db: Session, workflow_id: str) -> Optional[WorkflowGenerationResponse]:
+    async def get_workflow(db: AsyncSession, workflow_id: str) -> Optional[WorkflowGenerationResponse]:
         """
         Get a specific workflow plan by ID
         
@@ -73,7 +74,8 @@ class WorkflowService:
         Returns:
             Workflow plan details or None if not found
         """
-        workflow = db.query(WorkflowPlan).filter(WorkflowPlan.id == workflow_id).first()
+        result = await db.execute(select(WorkflowPlan).filter(WorkflowPlan.id == workflow_id))
+        workflow = result.scalars().first()
         
         if not workflow:
             return None
@@ -90,7 +92,7 @@ class WorkflowService:
         )
     
     @staticmethod
-    def list_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[WorkflowGenerationResponse]:
+    async def list_workflows(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[WorkflowGenerationResponse]:
         """
         List all workflow plans
         
@@ -102,7 +104,8 @@ class WorkflowService:
         Returns:
             List of workflow plans
         """
-        workflows = db.query(WorkflowPlan).offset(skip).limit(limit).all()
+        result = await db.execute(select(WorkflowPlan).offset(skip).limit(limit))
+        workflows = result.scalars().all()
         
         result = []
         for workflow in workflows:
@@ -133,7 +136,7 @@ class WorkflowService:
         return result
     
     @staticmethod
-    def execute_workflow(db: Session, workflow_id: str, execution_data: Optional[Dict[str, Any]] = None) -> WorkflowExecutionResponse:
+    async def execute_workflow(db: AsyncSession, workflow_id: str, execution_data: Optional[Dict[str, Any]] = None) -> WorkflowExecutionResponse:
         """
         Execute a workflow plan
         
@@ -146,7 +149,8 @@ class WorkflowService:
             Execution details
         """
         # Verify workflow exists
-        workflow = db.query(WorkflowPlan).filter(WorkflowPlan.id == workflow_id).first()
+        result = await db.execute(select(WorkflowPlan).filter(WorkflowPlan.id == workflow_id))
+        workflow = result.scalars().first()
         if not workflow:
             raise ValueError("Workflow plan not found")
         
@@ -158,8 +162,8 @@ class WorkflowService:
         )
         
         db.add(execution)
-        db.commit()
-        db.refresh(execution)
+        await db.commit()
+        await db.refresh(execution)
         
         # TODO: Integrate with Temporal.io for actual execution
         # For now, just return the execution record
@@ -174,7 +178,7 @@ class WorkflowService:
         )
     
     @staticmethod
-    def get_execution(db: Session, execution_id: str) -> Optional[Dict[str, Any]]:
+    async def get_execution(db: AsyncSession, execution_id: str) -> Optional[Dict[str, Any]]:
         """
         Get workflow execution details
         
@@ -185,7 +189,8 @@ class WorkflowService:
         Returns:
             Execution details or None if not found
         """
-        execution = db.query(WorkflowExecution).filter(WorkflowExecution.id == execution_id).first()
+        result = await db.execute(select(WorkflowExecution).filter(WorkflowExecution.id == execution_id))
+        execution = result.scalars().first()
         
         if not execution:
             return None

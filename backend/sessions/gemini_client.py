@@ -36,6 +36,20 @@ class GeminiClient:
         """
         return self.model.generate_content(content)
 
+    async def generate_async(self, content: str):
+        """
+        Generate content using the Gemini model asynchronously
+        
+        Args:
+            content: The prompt/content to send to the model
+            
+        Returns:
+            Response object from Gemini API
+        """
+        import asyncio
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.model.generate_content, content)
+
 
 # Global Gemini client instance
 gemini_client = GeminiClient()
