@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
 
 from sessions.database import get_db
-from services.ai_service import AIService
+from services.ai_service import ai_service
 from services.workflow_service import WorkflowService
 from schemas import ProblemStatementRequest
 from models import WorkflowPlan
@@ -33,7 +33,7 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
     
     try:
         # Stream progress events from AI service
-        async for event in AIService.generate_workflow_plan_stream(db, problem_statement):
+        async for event in ai_service.generate_workflow_plan_stream(db, problem_statement):
             event_type = event.get("event", "message")
             event_data = event.get("data", {})
             
