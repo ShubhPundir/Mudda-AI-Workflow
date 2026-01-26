@@ -2,7 +2,7 @@
 Component management router
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from sessions.database import get_db
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/components", tags=["components"])
 @router.post("", response_model=ComponentResponse)
 async def create_component(
     request: ComponentCreateRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Create a new API component
@@ -28,7 +28,7 @@ async def create_component(
         Created component details
     """
     try:
-        return ComponentService.create_component(db, request)
+        return await ComponentService.create_component(db, request)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -39,7 +39,7 @@ async def create_component(
 @router.get("", response_model=List[ComponentResponse])
 async def list_components(
     active_only: bool = True,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     List all available components
@@ -52,7 +52,7 @@ async def list_components(
         List of components
     """
     try:
-        return ComponentService.list_components(db, active_only)
+        return await ComponentService.list_components(db, active_only)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -63,7 +63,7 @@ async def list_components(
 @router.get("/{component_id}", response_model=ComponentResponse)
 async def get_component(
     component_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Get a specific component by ID
@@ -76,7 +76,7 @@ async def get_component(
         Component details
     """
     try:
-        component = ComponentService.get_component(db, component_id)
+        component = await ComponentService.get_component(db, component_id)
         
         if not component:
             raise HTTPException(

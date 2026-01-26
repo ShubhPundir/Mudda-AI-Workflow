@@ -2,7 +2,7 @@
 Workflow management router
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 
 from sessions.database import get_db
@@ -11,7 +11,8 @@ from schemas import (
     ProblemStatementRequest,
     WorkflowGenerationResponse,
     WorkflowExecutionRequest,
-    WorkflowExecutionResponse
+    WorkflowExecutionResponse,
+    WorkflowPlanSchema
 )
 from typing import List
 
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/workflows", tags=["workflows"])
 @router.post("/generate", response_model=WorkflowGenerationResponse)
 async def generate_workflow(
     request: ProblemStatementRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Generate a workflow plan for a civic issue
@@ -34,7 +35,7 @@ async def generate_workflow(
         Generated workflow plan with ID
     """
     try:
-        return WorkflowService.generate_workflow(db, request)
+        return await WorkflowService.generate_workflow(db, request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -50,7 +51,7 @@ async def generate_workflow(
 @router.get("/{workflow_id}", response_model=WorkflowGenerationResponse)
 async def get_workflow(
     workflow_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Get a specific workflow plan by ID
@@ -63,7 +64,7 @@ async def get_workflow(
         Workflow plan details
     """
     try:
-        workflow = WorkflowService.get_workflow(db, workflow_id)
+        workflow = await WorkflowService.get_workflow(db, workflow_id)
         
         if not workflow:
             raise HTTPException(
@@ -81,11 +82,47 @@ async def get_workflow(
         )
 
 
+@router.put("/{workflow_id}", response_model=WorkflowGenerationResponse)
+async def update_workflow(
+    workflow_id: str,
+    workflow_plan: WorkflowPlanSchema,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update a workflow plan
+    
+    Args:
+        workflow_id: UUID of the workflow plan
+        workflow_plan: New workflow plan data
+        db: Database session
+        
+    Returns:
+        Updated workflow plan details
+    """
+    try:
+        updated_workflow = await WorkflowService.update_workflow(db, workflow_id, workflow_plan)
+        
+        if not updated_workflow:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Workflow plan not found"
+            )
+            
+        return updated_workflow
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update workflow: {str(e)}"
+        )
+
+
 @router.get("", response_model=List[WorkflowGenerationResponse])
 async def list_workflows(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     List all workflow plans
@@ -99,7 +136,7 @@ async def list_workflows(
         List of workflow plans
     """
     try:
-        return WorkflowService.list_workflows(db, skip, limit)
+        return await WorkflowService.list_workflows(db, skip, limit)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -111,7 +148,7 @@ async def list_workflows(
 async def execute_workflow(
     workflow_id: str,
     request: WorkflowExecutionRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Execute a workflow plan
@@ -125,7 +162,7 @@ async def execute_workflow(
         Execution details
     """
     try:
-        return WorkflowService.execute_workflow(db, workflow_id, request.execution_data)
+        return await WorkflowService.execute_workflow(db, workflow_id, request.execution_data)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -141,7 +178,7 @@ async def execute_workflow(
 @router.get("/executions/{execution_id}")
 async def get_execution(
     execution_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Get workflow execution details
@@ -154,7 +191,7 @@ async def get_execution(
         Execution details
     """
     try:
-        execution = WorkflowService.get_execution(db, execution_id)
+        execution = await WorkflowService.get_execution(db, execution_id)
         
         if not execution:
             raise HTTPException(

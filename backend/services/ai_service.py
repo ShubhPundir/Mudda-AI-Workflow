@@ -4,7 +4,8 @@ AI Service for workflow generation using Gemini AI
 import json
 import re
 from typing import Dict, Any, List
-from sqlalchemy.orm import Session
+from typing import Dict, Any, List
+from sqlalchemy.ext.asyncio import AsyncSession
 from services.component_service import ComponentService
 from sessions.gemini_client import gemini_client
 
@@ -182,7 +183,7 @@ Respond ONLY in **valid JSON** matching this schema:
                 raise ValueError(f"Step {i} references non-existent component: {step['component_id']}")
 
     @staticmethod
-    def select_components(db: Session, problem_statement: str) -> List[str]:
+    async def select_components(db: AsyncSession, problem_statement: str) -> List[str]:
         """
         Step 1: Select relevant components for the problem statement
         
@@ -194,7 +195,7 @@ Respond ONLY in **valid JSON** matching this schema:
             List of selected component IDs
         """
         # Get minimal component info (id, name, description only)
-        components = ComponentService.get_components_for_selection(db)
+        components = await ComponentService.get_components_for_selection(db)
         
         if not components:
             raise ValueError("No active components available in the system")
@@ -215,7 +216,7 @@ Select the component IDs that are relevant for solving this problem.
         try:
             # Generate response using Gemini
             system_prompt = AIService._get_component_selection_prompt()
-            response = gemini_client.generate(system_prompt + "\n\n" + selection_prompt)
+            response = await gemini_client.generate_async(system_prompt + "\n\n" + selection_prompt)
             
             # Extract and serialize JSON from response
             response_text = AIService._serialize_ai_response(response)
@@ -240,7 +241,7 @@ Select the component IDs that are relevant for solving this problem.
             raise ValueError(f"Failed to select components: {e}")
 
     @staticmethod
-    def generate_workflow_plan(db: Session, problem_statement: str) -> Dict[str, Any]:
+    async def generate_workflow_plan(db: AsyncSession, problem_statement: str) -> Dict[str, Any]:
         """
         Generate a workflow plan for the given problem statement using two-step process:
         1. Select relevant components (minimal token usage)
@@ -255,11 +256,11 @@ Select the component IDs that are relevant for solving this problem.
         """
         # Step 1: Select relevant components
         print("Step 1: Selecting relevant components...")
-        selected_component_ids = AIService.select_components(db, problem_statement)
+        selected_component_ids = await AIService.select_components(db, problem_statement)
         print(f"Selected {len(selected_component_ids)} components: {selected_component_ids}")
         
         # Step 2: Get full details for selected components only
-        selected_components = ComponentService.get_components_by_ids(db, selected_component_ids)
+        selected_components = await ComponentService.get_components_by_ids(db, selected_component_ids)
         
         if not selected_components:
             raise ValueError("Failed to retrieve details for selected components")
@@ -274,7 +275,7 @@ Problem Statement: {problem_statement}
 Selected Components (full details):
 {json.dumps(components_dict, indent=2)}
 
-Please generate a workflow plan to resolve this civic issue using the selected components.
+Generate a workflow plan to resolve this civic issue using the selected components.
 Follow the DAG structure and ensure all steps are properly connected.
 Use the exact endpoint URLs, HTTP methods, and schemas from the component details.
 """
@@ -282,7 +283,7 @@ Use the exact endpoint URLs, HTTP methods, and schemas from the component detail
         try:
             # Generate response using Gemini
             system_prompt = AIService._get_workflow_generation_prompt()
-            response = gemini_client.generate(system_prompt + "\n\n" + workflow_prompt)
+            response = await gemini_client.generate_async(system_prompt + "\n\n" + workflow_prompt)
             
             # Extract and serialize JSON from response
             response_text = AIService._serialize_ai_response(response)
@@ -303,3 +304,108 @@ Use the exact endpoint URLs, HTTP methods, and schemas from the component detail
             raise ValueError(f"Failed to parse AI response as JSON: {e}. Response text: {response_text_debug[:500]}")
         except Exception as e:
             raise ValueError(f"Failed to generate workflow plan: {e}")
+    
+    @staticmethod
+    async def generate_workflow_plan_stream(db: AsyncSession, problem_statement: str):
+        """
+        Generate a workflow plan with streaming progress updates.
+        Yields SSE-compatible events at each stage.
+        
+        Args:
+            db: Database session
+            problem_statement: Description of the civic issue to resolve
+            
+        Yields:
+            Dict containing event type and data for SSE streaming
+        """
+        try:
+            # Step 1: Component Selection Start
+            yield {
+                "event": "component_selection_start",
+                "data": {
+                    "message": "Agent 1: Analyzing problem and selecting components...",
+                    "agent": "component_selector"
+                }
+            }
+            
+            # Select relevant components
+            selected_component_ids = await AIService.select_components(db, problem_statement)
+            
+            # Step 2: Get full details for selected components
+            selected_components = await ComponentService.get_components_by_ids(db, selected_component_ids)
+            
+            if not selected_components:
+                raise ValueError("Failed to retrieve details for selected components")
+            
+            # Convert to dicts for JSON serialization
+            components_dict = [component.model_dump() for component in selected_components]
+            
+            # Yield component selection complete with component details
+            yield {
+                "event": "component_selection_complete",
+                "data": {
+                    "message": f"Agent 1: Selected {len(components_dict)} components",
+                    "agent": "component_selector",
+                    "components": [
+                        {
+                            "id": comp["id"],
+                            "name": comp["name"],
+                            "description": comp["description"]
+                        }
+                        for comp in components_dict
+                    ]
+                }
+            }
+            
+            # Step 3: Workflow Generation Start
+            yield {
+                "event": "workflow_generation_start",
+                "data": {
+                    "message": "Agent 2: Creating workflow plan...",
+                    "agent": "plan_maker"
+                }
+            }
+            
+            # Create the prompt for workflow generation
+            workflow_prompt = f"""
+Problem Statement: {problem_statement}
+
+Selected Components (full details):
+{json.dumps(components_dict, indent=2)}
+
+Generate a workflow plan to resolve this civic issue using the selected components.
+Follow the DAG structure and ensure all steps are properly connected.
+Use the exact endpoint URLs, HTTP methods, and schemas from the component details.
+"""
+            
+            # Generate response using Gemini
+            system_prompt = AIService._get_workflow_generation_prompt()
+            response = await gemini_client.generate_async(system_prompt + "\n\n" + workflow_prompt)
+            
+            # Extract and serialize JSON from response
+            response_text = AIService._serialize_ai_response(response)
+            
+            # Parse the JSON response
+            workflow_json = json.loads(response_text)
+            
+            # Validate the workflow structure
+            AIService._validate_workflow(workflow_json, components_dict)
+            
+            # Step 4: Workflow Generation Complete
+            yield {
+                "event": "workflow_generation_complete",
+                "data": {
+                    "message": "Agent 2: Workflow plan created successfully",
+                    "agent": "plan_maker",
+                    "workflow": workflow_json
+                }
+            }
+            
+        except Exception as e:
+            yield {
+                "event": "error",
+                "data": {
+                    "message": str(e),
+                    "error": True
+                }
+            }

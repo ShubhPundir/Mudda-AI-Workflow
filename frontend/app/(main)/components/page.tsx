@@ -6,8 +6,10 @@ import ComponentsHeader from './_components/ComponentsHeader';
 import ComponentsTable from './_components/ComponentsTable';
 import CreateComponentModal from './_components/CreateComponentModal';
 import ComponentDetailsModal from './_components/ComponentDetailsModal';
-import LoadingState from '../workflows/_components/LoadingState';
-import ErrorAlert from '../workflows/_components/ErrorAlert';
+import LoadingState from '@/components/LoadingState';
+import ErrorAlert from '@/components/ErrorAlert';
+import DataLayout from '@/components/DataLayout';
+import ComponentCard from './_components/ComponentCard';
 
 export default function ComponentsPage() {
   const [components, setComponents] = useState<Component[]>([]);
@@ -90,11 +92,82 @@ export default function ComponentsPage() {
 
       {error && <ErrorAlert message={error} />}
 
-      {loading ? (
-        <LoadingState />
-      ) : (
-        <ComponentsTable components={components} onViewDetails={handleViewDetails} />
-      )}
+      <DataLayout
+        data={components}
+        loading={loading}
+        error={error}
+        itemName="components"
+        columns={[
+          {
+            key: 'name',
+            header: 'Component Name',
+            width: 'min-w-[280px]',
+            render: (component: Component) => (
+              <div className="min-w-0">
+                <div className="font-semibold text-gray-900 truncate">{component.name}</div>
+                {component.description && (
+                  <div className="text-gray-500 text-xs mt-1 line-clamp-2">{component.description}</div>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: 'type',
+            header: 'Type',
+            width: 'w-28',
+            render: (component: Component) => (
+              <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                {component.type}
+              </span>
+            ),
+          },
+          {
+            key: 'category',
+            header: 'Category',
+            width: 'w-40',
+            render: (component: Component) => (
+              <span className="text-gray-600 font-medium">{component.category || 'N/A'}</span>
+            ),
+          },
+          {
+            key: 'endpoint_url',
+            header: 'Endpoint',
+            width: 'min-w-[300px]',
+            render: (component: Component) => (
+              <div className="flex items-center space-x-2 min-w-0">
+                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span className="text-sm text-gray-600 font-mono truncate">
+                  {component.endpoint_url}
+                </span>
+              </div>
+            ),
+          },
+          {
+            key: 'is_active',
+            header: 'Status',
+            width: 'w-28',
+            render: (component: Component) => (
+              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${component.is_active
+                ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                : 'bg-gray-100 text-gray-700 border-gray-200'
+                }`}>
+                {component.is_active ? 'Active' : 'Inactive'}
+              </span>
+            ),
+          },
+        ]}
+        renderGridItem={(component) => (
+          <ComponentCard
+            key={component.id}
+            component={component}
+            onClick={() => handleViewDetails(component)}
+          />
+        )}
+        onRowClick={handleViewDetails}
+        emptyMessage="No components found. Create your first component to get started."
+      />
 
       <CreateComponentModal
         isOpen={isCreateModalOpen}

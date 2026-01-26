@@ -8,3 +8,4 @@ alembic==1.13.1
 temporalio==1.4.0
 python-dotenv==1.0.0
 httpx==0.25.2
+asyncpg==0.31.0

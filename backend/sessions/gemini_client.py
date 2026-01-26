@@ -24,9 +24,9 @@ class GeminiClient:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
     
-    def generate(self, content: str):
+    async def generate_async(self, content: str):
         """
-        Generate content using the Gemini model
+        Generate content using the Gemini model asynchronously
         
         Args:
             content: The prompt/content to send to the model
@@ -34,7 +34,9 @@ class GeminiClient:
         Returns:
             Response object from Gemini API
         """
-        return self.model.generate_content(content)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.model.generate_content, content)
 
 
 # Global Gemini client instance

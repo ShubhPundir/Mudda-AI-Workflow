@@ -7,10 +7,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from sessions.database import engine
 from models import Base
-from routers import component_router, workflow_router, health_router
+from routers import component_router, workflow_router, workflow_stream_router, health_router
 
 # Create database tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
+
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # NOTE: don't use this for now
+
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -36,6 +47,7 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(component_router)
 app.include_router(workflow_router)
+app.include_router(workflow_stream_router)
 
 
 if __name__ == "__main__":
