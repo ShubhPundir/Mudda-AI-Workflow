@@ -19,7 +19,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <Sidebar />
-        <main className="ml-64 min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-indigo-50/20">
+        <main
+          className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-indigo-50/20 transition-all duration-300"
+          style={{ marginLeft: 'var(--sidebar-width, 256px)' }}
+        >
           {children}
         </main>
       </body>
