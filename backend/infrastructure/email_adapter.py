@@ -120,11 +120,15 @@ class EmailAdapter:
             params["bcc"] = self._normalise_recipients(payload["bcc"])
         if payload.get("tags"):
             params["tags"] = payload["tags"]
+        if payload.get("attachments"):
+            # Resend attachments: [{"content": b64, "filename": "x.pdf"}, {"path": "path/to/file"}]
+            params["attachments"] = payload["attachments"]
 
         logger.info(
-            "Sending email via Resend — to=%s subject=%r",
+            "Sending email via Resend — to=%s subject=%r attachment_count=%d",
             to,
             subject,
+            len(payload.get("attachments", [])),
         )
 
         # Resend SDK is synchronous under the hood but very fast.

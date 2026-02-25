@@ -42,6 +42,7 @@ async def send_notification(input: Dict[str, Any]) -> Dict[str, Any]:
             - cc (list[str], optional): CC recipients.
             - bcc (list[str], optional): BCC recipients.
             - tags (list[dict], optional): Resend metadata tags.
+            - attachments (list[dict], optional): List of attachments (path or content).
             - step_id (str, optional): Originating workflow step ID (for tracing).
             - issue_id (str, optional): Related civic issue ID (for tracing).
 
