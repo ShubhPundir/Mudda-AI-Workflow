@@ -1,32 +1,47 @@
 """
-PDF document generator.
+PDF document generator using fpdf2.
 
-Wraps PDF creation logic (e.g., ReportLab, WeasyPrint, wkhtmltopdf).
-No Temporal decorators — this is a plain infrastructure wrapper.
+Architecture:
+    Workflow  →  [Temporal Activity]  →  PDFGenerator (this file)
+                                            ↓
+                                         fpdf2 library
+
+Design rules:
+    - NO Temporal decorators (@activity.defn, etc.)
+    - Clean infrastructure wrapper, fully testable in isolation.
+    - Structured output: Title, Date, and Body text.
 """
 import logging
 import os
+from datetime import datetime
 from typing import Any, Dict, Optional
+
+from fpdf import FPDF, XPos, YPos
 
 logger = logging.getLogger(__name__)
 
 
 class PDFGenerator:
     """
-    Generates PDF documents from text/HTML content.
+    Generates PDF documents using the fpdf2 library.
 
-    Replace the placeholder implementation with your preferred
-    PDF library (ReportLab, WeasyPrint, etc.).
+    Usage:
+        generator = PDFGenerator()
+        result = await generator.generate(
+            content="Issue: Water leakage at street 10",
+            metadata={"title": "Civic Issue Report", "report_type": "summary"}
+        )
     """
 
     def __init__(self, output_dir: Optional[str] = None):
         """
         Args:
-            output_dir: Directory to write generated PDFs.
-                        Defaults to './generated_reports'.
+            output_dir: Directory to save generated PDFs.
+                        Defaults to '<cwd>/generated_reports'.
         """
         self.output_dir = output_dir or os.path.join(os.getcwd(), "generated_reports")
         os.makedirs(self.output_dir, exist_ok=True)
+        logger.info("PDFGenerator initialised — output_dir=%s", self.output_dir)
 
     async def generate(
         self,
@@ -35,48 +50,60 @@ class PDFGenerator:
         filename: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Generate a PDF document.
+        Generate a PDF document from text content.
 
         Args:
-            content: Text or HTML content for the PDF body.
-            metadata: Document metadata (title, author, date, etc.).
-            filename: Optional output filename. Auto-generated if omitted.
+            content: The text content of the report.
+            metadata: Metadata dictionary containing 'title'.
+            filename: Optional filename. If omitted, generated from title.
 
         Returns:
-            Dict with file_path, filename, and size_bytes.
-
-        Raises:
-            RuntimeError: If PDF generation fails.
+            Dict containing: file_path, filename, size_bytes.
         """
-        title = metadata.get("title", "report")
+        title = metadata.get("title", "Civic Issue Report")
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Create safe filename
         safe_title = "".join(c if c.isalnum() or c in "-_ " else "" for c in title)
         filename = filename or f"{safe_title.replace(' ', '_').lower()}.pdf"
         file_path = os.path.join(self.output_dir, filename)
 
-        logger.info("Generating PDF — file=%s title=%s", file_path, title)
+        logger.info("Generating real PDF — title=%r file=%s", title, filename)
 
-        # ------------------------------------------------------------------
-        # TODO: Replace with actual PDF generation, e.g.:
-        #
-        # from reportlab.lib.pagesizes import letter
-        # from reportlab.pdfgen import canvas
-        # c = canvas.Canvas(file_path, pagesize=letter)
-        # c.drawString(72, 720, title)
-        # ...
-        # c.save()
-        # ------------------------------------------------------------------
+        try:
+            # Initialize PDF
+            pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            
+            # --- Header ---
+            pdf.set_font("helvetica", "B", 16)
+            pdf.cell(0, 10, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+            pdf.set_font("helvetica", "I", 10)
+            pdf.cell(0, 10, f"Generated on: {date_str}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+            pdf.ln(10)
+            
+            # --- Body ---
+            pdf.set_font("helvetica", "", 12)
+            # multi_cell is perfect for long text blocks
+            pdf.multi_cell(0, 10, content)
+            
+            # --- Footer ---
+            # Page number at the bottom automatically handled by fpdf or we can footer override
+            # Here we just save
+            pdf.output(file_path)
 
-        # Placeholder: write a plain-text file as a stand-in
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(f"TITLE: {title}\n\n")
-            f.write(content)
+            size_bytes = os.path.getsize(file_path)
+            logger.info("PDF saved successfully — %d bytes", size_bytes)
 
-        size_bytes = os.path.getsize(file_path)
-        logger.info("PDF generated — %d bytes at %s", size_bytes, file_path)
+            return {
+                "file_path": file_path,
+                "filename": filename,
+                "size_bytes": size_bytes,
+                "generated_at": date_str,
+                "metadata": metadata
+            }
 
-        return {
-            "file_path": file_path,
-            "filename": filename,
-            "size_bytes": size_bytes,
-            "metadata": metadata,
-        }
+        except Exception as exc:
+            logger.error("Failed to generate PDF: %s", exc, exc_info=True)
+            raise RuntimeError(f"PDF generation failed: {exc}") from exc
