@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sessions.database import SessionLocal, engine
 from models import Base, Component
 from services import ComponentService, WorkflowService
-from temporal_workflows import execute_workflow_plan
+from temporal.client import temporal_client_manager
 
 
 def create_sample_components():

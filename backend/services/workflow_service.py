@@ -11,7 +11,7 @@ from schemas import (
     WorkflowExecutionResponse,
     ProblemStatementRequest
 )
-from services.ai_service import AIService
+from services.ai_service import ai_service
 from datetime import datetime
 
 
@@ -32,7 +32,7 @@ class WorkflowService:
         """
         try:
             # Generate the workflow plan using AI
-            workflow_json = await AIService.generate_workflow_plan(db, request.problem_statement)
+            workflow_json = await ai_service.generate_workflow_plan(db, request.problem_statement)
             
             # Save to database
             workflow_plan = WorkflowPlan(
