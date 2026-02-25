@@ -1,66 +1,83 @@
 """
-Notification activities for sending email/SMS/push notifications.
+Notification activities — Temporal activity layer for sending emails.
 
-Uses the EmailAdapter from the infrastructure layer.
+Architecture:
+    Workflow  →  [Temporal]  →  send_notification (this file)
+                                    ↓
+                             EmailAdapter  →  Resend API
+
+This file owns the @activity.defn decorator.
+EmailAdapter (infrastructure layer) owns the actual API call.
 """
 import logging
 from typing import Any, Dict
+
 from temporalio import activity
 
 from infrastructure.email_adapter import EmailAdapter
 
 logger = logging.getLogger(__name__)
 
-# Module-level adapter instance (re-used across activity invocations)
+# Module-level adapter instance (created once per worker process)
 _email_adapter = EmailAdapter()
 
 
 @activity.defn
 async def send_notification(input: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Send a notification (currently email-based).
+    Send an email notification via the Resend API.
+
+    This activity delegates all real work to EmailAdapter — it is purely
+    a Temporal boundary, adding structured logging and a normalised return value.
 
     Args:
         input: Dict containing:
-            - to (str): Recipient address.
-            - subject (str): Notification subject.
-            - body (str): Notification body text.
-            - cc (str, optional): CC recipient.
-            - notification_type (str, optional): e.g. 'email', 'sms'.
-            - step_id (str, optional): Originating workflow step ID.
+            - to (list[str] | str): Recipient address(es). Required.
+            - subject (str): Email subject. Required.
+            - body (str): Plain-text message body. Required unless `html` provided.
+            - html (str, optional): HTML body. Takes precedence over `body`.
+            - from_email (str, optional): Override the default sender address.
+            - from_name (str, optional): Override the default sender display name.
+            - reply_to (str, optional): Reply-to address.
+            - cc (list[str], optional): CC recipients.
+            - bcc (list[str], optional): BCC recipients.
+            - tags (list[dict], optional): Resend metadata tags.
+            - step_id (str, optional): Originating workflow step ID (for tracing).
+            - issue_id (str, optional): Related civic issue ID (for tracing).
 
     Returns:
-        Structured JSON with delivery status.
+        Dict with keys:
+            - step_id (str)
+            - status (str): "completed"
+            - channel (str): "email"
+            - message_id (str): Resend message ID
+            - to (list[str])
+            - subject (str)
     """
-    step_id = input.get("step_id", "unknown")
-    notification_type = input.get("notification_type", "email")
+    step_id: str = input.get("step_id", "unknown")
+    issue_id: str = input.get("issue_id", "unknown")
 
-    logger.info(
-        "Sending notification — step_id=%s type=%s to=%s",
+    activity.logger.info(
+        "send_notification activity — step_id=%s issue_id=%s to=%s subject=%r",
         step_id,
-        notification_type,
+        issue_id,
         input.get("to"),
+        input.get("subject"),
     )
 
-    if notification_type == "email":
-        result = await _email_adapter.send(
-            to=input.get("to", ""),
-            subject=input.get("subject", "Mudda Workflow Notification"),
-            body=input.get("body", ""),
-            cc=input.get("cc"),
-        )
-    else:
-        # Placeholder for SMS / push / other channels
-        logger.warning("Unsupported notification type: %s — falling back to log", notification_type)
-        result = {
-            "status": "logged",
-            "notification_type": notification_type,
-            "message": f"Notification logged (type '{notification_type}' not yet implemented)",
-        }
+    result = await _email_adapter.send_email(input)
+
+    activity.logger.info(
+        "Email delivered — step_id=%s message_id=%s",
+        step_id,
+        result.get("message_id"),
+    )
 
     return {
         "step_id": step_id,
-        "notification_type": notification_type,
-        "result": result,
         "status": "completed",
+        "channel": "email",
+        "message_id": result["message_id"],
+        "to": result["to"],
+        "subject": result["subject"],
     }
