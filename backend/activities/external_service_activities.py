@@ -7,14 +7,13 @@ import logging
 from typing import Any, Dict
 from temporalio import activity
 
-from infrastructure.plumber_api_adapter import PlumberAPIAdapter
-from infrastructure.contractor_api_adapter import ContractorAPIAdapter
+from infrastructure import ContractorFactory, PlumberFactory
 
 logger = logging.getLogger(__name__)
 
 # Module-level adapter instances
-_plumber_adapter = PlumberAPIAdapter()
-_contractor_adapter = ContractorAPIAdapter()
+_plumber_service = PlumberFactory.get_plumber_service()
+_contractor_service = ContractorFactory.get_contractor_service()
 
 
 @activity.defn
@@ -36,7 +35,7 @@ async def contact_plumber(input: Dict[str, Any]) -> Dict[str, Any]:
     step_id = input.get("step_id", "unknown")
     logger.info("contact_plumber activity — step_id=%s", step_id)
 
-    result = await _plumber_adapter.contact(input)
+    result = await _plumber_service.contact(input)
 
     return {
         "step_id": step_id,
@@ -65,7 +64,7 @@ async def contact_contractor(input: Dict[str, Any]) -> Dict[str, Any]:
     step_id = input.get("step_id", "unknown")
     logger.info("contact_contractor activity — step_id=%s", step_id)
 
-    result = await _contractor_adapter.contact(input)
+    result = await _contractor_service.contact(input)
 
     return {
         "step_id": step_id,
