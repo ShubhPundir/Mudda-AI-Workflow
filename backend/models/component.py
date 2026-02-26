@@ -8,54 +8,37 @@ from .base import Base
 Component model matching the actual database schema
 """
 class Component(Base):
-    """Model for available API components in the system"""
+    """
+    Component model representing a business-level logical unit.
+    Each component wraps one or more activities, orchestrates them,
+    and provides configuration for retries, logging, and metrics.
+    """
     __tablename__ = "components"
     __table_args__ = {'schema': 'workflow'}
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=func.gen_random_uuid())
-    
+
     # Metadata
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
-    type = Column(
-        String(50), 
-        CheckConstraint("type IN ('REST', 'RPC', 'GraphQL')"),
-        nullable=False
-    )
-    category = Column(Text, nullable=True)
-    
-    # Endpoint details
-    endpoint_url = Column(Text, nullable=False)
-    http_method = Column(
-        String(10),
-        CheckConstraint("http_method IN ('GET', 'POST', 'PUT', 'PATCH', 'DELETE')"),
-        nullable=True
-    )
-    
-    # Optional GraphQL or RPC specific fields
-    query_template = Column(Text, nullable=True)
-    rpc_function = Column(Text, nullable=True)
-    
-    # Authentication info
-    auth_type = Column(
-        String(20),
-        CheckConstraint("auth_type IN ('NONE', 'API_KEY', 'BEARER', 'BASIC', 'OAUTH2')"),
-        nullable=True,
-        default='NONE'
-    )
-    auth_config = Column(JSONB, nullable=True, default={})
-    
-    # Schema definitions
-    request_schema = Column(JSONB, nullable=True, default={})
-    response_schema = Column(JSONB, nullable=True, default={})
-    path_params = Column(JSONB, nullable=True, default={})
-    query_params = Column(JSONB, nullable=True, default={})
-    
-    # Versioning and ownership
-    version = Column(String(20), nullable=True, default='1.0')
+    category = Column(Text, nullable=True)  # e.g., "Home Services", "Gov Notifications"
     owner_service = Column(Text, nullable=True)
-    is_active = Column(Boolean, nullable=True, default=True)
-    
+    version = Column(String(20), nullable=True, default='1.0')
+    is_active = Column(Boolean, nullable=False, default=True)
+
+    # Activities definition
+    # List of activity names and config this component orchestrates
+    # Example:
+    # [
+    #   {"activity_name": "llm_activity", "retry_policy": {...}, "metadata": {...}},
+    #   {"activity_name": "plumber_dispatch_activity", "retry_policy": {...}, "metadata": {...}},
+    #   {"activity_name": "human_feedback_activity", "retry_policy": {...}}
+    # ]
+    activities = Column(JSONB, nullable=False, default=list)
+
+    # Optional global component-level configuration
+    config = Column(JSONB, nullable=True, default={})
+
     # Audit info
     created_at = Column(DateTime(timezone=True), nullable=True, default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=True, default=func.now(), onupdate=func.now())

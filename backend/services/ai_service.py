@@ -145,10 +145,14 @@ Generate a workflow plan to resolve this civic issue using the selected componen
     def _get_component_selection_prompt() -> str:
         """Get the system prompt for component selection"""
         return """
-You are "Mudda AI Component Selector", an expert at identifying relevant API components for civic issue resolution.
+You are "Mudda AI Component Selector", an expert at identifying high-level business components for civic issue resolution.
+
+### CONTEXT
+We have moved away from selecting individual API endpoints. Instead, we use **Components** which are logical units of work. 
+A Component (e.g., "Plumber Service") may internally orchestrate multiple activities (e.g., LLM analysis, API call, Human approval).
 
 ### TASK
-Given a problem statement, analyze the available components and select ONLY the components that are relevant for solving the issue.
+Given a problem statement, analyze the available high-level components and select ONLY the ones relevant for solving the issue.
 
 ### OUTPUT FORMAT
 Respond ONLY in **valid JSON** matching this schema:
@@ -161,9 +165,8 @@ Respond ONLY in **valid JSON** matching this schema:
 
 ### RULES:
 1. Select only components that are directly relevant to solving the problem
-2. Include components for: issue management, notifications, approvals, external services, etc.
-3. Be selective - don't include unnecessary components
-4. Return ONLY valid JSON with the array of selected component IDs
+2. Be selective - don't include unnecessary components
+3. Return ONLY valid JSON with the array of selected component IDs
 """
 
     @staticmethod
@@ -172,23 +175,15 @@ Respond ONLY in **valid JSON** matching this schema:
         return """
 You are "Mudda AI Plan Maker", an expert government management officer and workflow automation designer.
 
-You are part of a larger AI Orchestration System that works with Temporal.io, PostgreSQL, and REST-based microservices.
-Your task is to create executable workflow plans that resolve real-world civic issues efficiently by orchestrating the use of available API components.
+You are part of a larger AI Orchestration System that works with Temporal.io and a "Business Component" architecture.
 
 ### CONTEXT
-You will be given:
-1. A **problem statement** describing a civic issue
-2. A list of **selected components** with full details (endpoint URLs, schemas, etc.)
+A **Component** is a business-level logical unit. Each component wraps one or more internal activities (e.g., LLM work, API calls, Status updates, Human approvals).
+You do NOT need to orchestrate the internal activities of a component. You only orchestrate the **Components** themselves.
 
-### OBJECTIVE
+### TASK
 Using the provided components, **design an actionable end-to-end plan** to resolve the civic issue.
-The plan must follow a **directed acyclic graph (DAG)** structure, where each step references one component by `id`, defines its inputs, and indicates dependencies.
-
-The workflow must be **ready for orchestration by Temporal**, meaning:
-- Each step can be executed independently by a Temporal worker
-- Inputs and outputs between steps should be defined explicitly
-- Include human approval steps if necessary before sensitive operations
-- Use the exact endpoint URLs, HTTP methods, and schemas from the provided components
+The plan must follow a **directed acyclic graph (DAG)** structure, where each step references one component by `id`.
 
 ### OUTPUT FORMAT
 Respond ONLY in **valid JSON** matching this schema:
@@ -199,35 +194,23 @@ Respond ONLY in **valid JSON** matching this schema:
   "description": "Workflow to manage and resolve a reported water leakage issue",
   "steps": [
     {
-      "step_id": "fetch_issue",
-      "component_id": "uuid-of-component",
-      "description": "Fetch issue details from issue-service",
+      "step_id": "fetch_issue_details",
+      "component_id": "uuid-of-issue-fetch-component",
+      "description": "Gather all metadata about the reported issue",
       "inputs": {
-        "path_params": {"issue_id": "{{issue_id}}"},
-        "query_params": {}
+        "path_params": {"issue_id": "{{issue_id}}"}
       },
       "outputs": ["issue_details"],
-      "next": ["assign_engineer"]
+      "next": ["dispatch_plumber"]
     },
     {
-      "step_id": "assign_engineer",
-      "component_id": "uuid-of-assignment-component",
-      "description": "Assign engineer from maintenance department",
+      "step_id": "dispatch_plumber",
+      "component_id": "uuid-of-plumber-component",
+      "description": "Orchestrate plumber selection and dispatch",
       "inputs": {
-        "request_body": {"issue_id": "{{issue_id}}", "department": "Water Maintenance"}
+        "context": "{{issue_details}}"
       },
-      "outputs": ["assignment_confirmation"],
-      "requires_approval": true,
-      "next": ["notify_citizen"]
-    },
-    {
-      "step_id": "notify_citizen",
-      "component_id": "uuid-of-notification-component",
-      "description": "Notify the citizen that issue is being resolved",
-      "inputs": {
-        "request_body": {"message": "Your issue is now assigned and under resolution."}
-      },
-      "outputs": [],
+      "outputs": ["dispatch_result"],
       "next": []
     }
   ]
@@ -236,13 +219,10 @@ Respond ONLY in **valid JSON** matching this schema:
 
 ### RULES:
 1. Use only the provided components - do not create fictional ones
-2. Ensure the workflow is logically sound and follows government processes
-3. Include approval steps for sensitive operations - approval steps MUST have a component_id (use the "Approval Service - Human Review" component if available)
-4. EVERY step MUST have a component_id - no exceptions
-5. Make sure all step dependencies are properly defined
-6. Use template variables like {{issue_id}} for dynamic inputs
-7. Use the exact endpoint URLs, HTTP methods, and request/response schemas from the component details
-8. Return ONLY valid JSON, no additional text
+2. Orchestrate at the **Component** level.
+3. Every step MUST have a `component_id`.
+4. Use template variables like {{issue_id}} or {{step_id.output_key}} for dynamic inputs.
+5. Return ONLY valid JSON, no additional text.
 """
 
     @staticmethod

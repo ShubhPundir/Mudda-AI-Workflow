@@ -32,13 +32,8 @@ COMPONENT_REGISTRY: Dict[str, Any] = {
 @activity.defn
 async def dispatch_component_step(input: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Dispatch a workflow step to the correct typed activity.
-
-    This activity:
-        1. Fetches the component from the database by component_id.
-        2. Determines the component category.
-        3. Delegates to the matching handler from COMPONENT_REGISTRY.
-        4. Returns the handler's structured result.
+    Dispatch a workflow step to a business component.
+    The component orchestrates its internal activities.
 
     Args:
         input: Dict containing:
@@ -47,10 +42,7 @@ async def dispatch_component_step(input: Dict[str, Any]) -> Dict[str, Any]:
             - step_id (str): ID of the workflow step.
 
     Returns:
-        Structured result from the delegated handler.
-
-    Raises:
-        ValueError: If component is not found or category is unsupported.
+        Aggregated results from all internal activities.
     """
     component_id: str = input["component_id"]
     step_inputs: Dict[str, Any] = input.get("inputs", {})
@@ -62,9 +54,7 @@ async def dispatch_component_step(input: Dict[str, Any]) -> Dict[str, Any]:
         component_id,
     )
 
-    # ------------------------------------------------------------------
     # 1. Fetch component from DB
-    # ------------------------------------------------------------------
     from sessions.database import AsyncSessionLocal
     from models import Component
     from sqlalchemy.future import select
@@ -78,64 +68,61 @@ async def dispatch_component_step(input: Dict[str, Any]) -> Dict[str, Any]:
     if component is None:
         raise ValueError(f"Component '{component_id}' not found in database")
 
-    # ------------------------------------------------------------------
-    # 2. Determine the category to route on
-    # ------------------------------------------------------------------
-    category = (component.category or "").strip().lower()
+    # 2. Iterate and execute internal activities
+    # Note: In a full production Temporal setup, these might be called
+    # as separate activities via the workflow, but the user requested
+    # "Component orchestrates its internal activities".
+    
+    results = {}
+    component_activities = component.activities or []
+    
+    for act_config in component_activities:
+        activity_name = act_config.get("activity_name")
+        if not activity_name:
+            continue
+            
+        logger.info("Running internal activity: %s for component: %s", activity_name, component.name)
+        
+        # Determine the handler from the registry
+        handler = COMPONENT_REGISTRY.get(activity_name)
+        if not handler:
+            # Fallback to category-based lookup if direct name doesn't match
+            handler = COMPONENT_REGISTRY.get(component.category.lower() if component.category else "unknown")
+            
+        if not handler:
+            logger.warning("No handler found for activity: %s", activity_name)
+            continue
 
-    # Fallback: if category is empty, try to infer from component name
-    if not category:
-        name_lower = (component.name or "").lower()
-        if "notification" in name_lower or "email" in name_lower:
-            category = "notification"
-        elif "plumber" in name_lower:
-            category = "external_plumber"
-        elif "contractor" in name_lower:
-            category = "external_contractor"
-        elif "document" in name_lower or "report" in name_lower:
-            category = "document"
-        elif "issue" in name_lower or "update" in name_lower:
-            category = "issue_update"
-        else:
-            category = "unknown"
+        # Prepare activity inputs
+        # Merge global component config, activity metadata, and step inputs
+        activity_inputs = {
+            **step_inputs,
+            "metadata": act_config.get("metadata", {}),
+            "config": component.config,
+            "step_id": step_id,
+            "component_id": str(component.id),
+            "component_name": component.name
+        }
 
-        logger.warning(
-            "Component '%s' has no category — inferred '%s' from name '%s'",
-            component_id,
-            category,
-            component.name,
-        )
+        # Execute activity (async call within current activity)
+        try:
+            act_result = await handler(activity_inputs)
+            results[activity_name] = act_result
+            
+            # Update cumulative inputs for next activity if needed
+            # (Optional: depends on if we want sequential data flow)
+            step_inputs.update(act_result if isinstance(act_result, dict) else {})
+            
+        except Exception as e:
+            logger.error("Activity %s failed: %s", activity_name, str(e))
+            results[activity_name] = {"success": False, "error": str(e)}
+            # Decide if failure should stop the chain
+            # For now, we continue or raise? Let's raise to trigger Temporal retry.
+            raise
 
-    # ------------------------------------------------------------------
-    # 3. Look up the handler
-    # ------------------------------------------------------------------
-    handler = COMPONENT_REGISTRY.get(category)
-    if handler is None:
-        raise ValueError(
-            f"Unsupported component category '{category}' "
-            f"for component '{component_id}' (name='{component.name}'). "
-            f"Supported categories: {list(COMPONENT_REGISTRY.keys())}"
-        )
-
-    # ------------------------------------------------------------------
-    # 4. Merge step context into inputs and delegate
-    # ------------------------------------------------------------------
-    merged_inputs = {
-        **step_inputs,
+    return {
+        "status": "completed",
         "step_id": step_id,
-        "component_id": component_id,
-        "component_name": component.name,
-        "endpoint_url": component.endpoint_url,
+        "component_id": str(component.id),
+        "results": results
     }
-
-    logger.info(
-        "Routing step_id=%s to handler=%s (category=%s)",
-        step_id,
-        handler.__name__,
-        category,
-    )
-
-    # Call the handler directly (it's an async function, not a Temporal activity call)
-    result = await handler(merged_inputs)
-
-    return result
