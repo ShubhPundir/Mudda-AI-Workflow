@@ -5,8 +5,11 @@ class LLMFactory:
     """
     Factory for creating LLMService instances.
     """
+    _instance = None
 
-    @staticmethod
-    def get_llm_service() -> LLMService:
-        # Currently only Gemini is supported.
-        return GeminiLLMAdapter()
+    @classmethod
+    def get_llm_service(cls) -> LLMService:
+        if cls._instance is None:
+            # Currently only Gemini is supported.
+            cls._instance = GeminiLLMAdapter()
+        return cls._instance

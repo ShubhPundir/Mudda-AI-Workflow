@@ -12,19 +12,25 @@ class EmailFactory:
     """
     Factory for creating EmailService instances.
     """
+    _instance = None
 
-    @staticmethod
-    def get_email_service() -> EmailService:
+    @classmethod
+    def get_email_service(cls) -> EmailService:
+        if cls._instance is not None:
+            return cls._instance
+            
         provider = settings.EMAIL_PROVIDER.lower()
         
         if provider == "resend":
-            return ResendEmailAdapter()
+            cls._instance = ResendEmailAdapter()
         elif provider == "aws_ses" or provider == "ses":
-            return AWSSESEmailAdapter()
+            cls._instance = AWSSESEmailAdapter()
         elif provider == "sendgrid":
-            return SendGridEmailAdapter()
+            cls._instance = SendGridEmailAdapter()
         elif provider == "brevo":
-            return BrevoEmailAdapter()
+            cls._instance = BrevoEmailAdapter()
         else:
             logger.warning("Unknown email provider '%s', defaulting to Resend", provider)
-            return ResendEmailAdapter()
+            cls._instance = ResendEmailAdapter()
+            
+        return cls._instance

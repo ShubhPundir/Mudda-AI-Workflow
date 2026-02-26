@@ -6,8 +6,11 @@ class PDFFactory:
     """
     Factory for creating PDFService instances.
     """
+    _instance = None
 
-    @staticmethod
-    def get_pdf_service(output_dir: Optional[str] = None) -> PDFService:
-        # Currently only FPDF is supported as per requirements.
-        return FPDFPDFAdapter(output_dir=output_dir)
+    @classmethod
+    def get_pdf_service(cls, output_dir: Optional[str] = None) -> PDFService:
+        if cls._instance is None:
+            # Currently only FPDF is supported as per requirements.
+            cls._instance = FPDFPDFAdapter(output_dir=output_dir)
+        return cls._instance
