@@ -14,12 +14,12 @@ from typing import Any, Dict
 
 from temporalio import activity
 
-from infrastructure.email_adapter import EmailAdapter
+from infrastructure import EmailFactory
 
 logger = logging.getLogger(__name__)
 
 # Module-level adapter instance (created once per worker process)
-_email_adapter = EmailAdapter()
+_email_service = EmailFactory.get_email_service()
 
 
 @activity.defn
@@ -66,7 +66,7 @@ async def send_notification(input: Dict[str, Any]) -> Dict[str, Any]:
         input.get("subject"),
     )
 
-    result = await _email_adapter.send_email(input)
+    result = await _email_service.send_email(input)
 
     activity.logger.info(
         "Email delivered — step_id=%s message_id=%s",
