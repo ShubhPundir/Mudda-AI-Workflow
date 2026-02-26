@@ -21,12 +21,14 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
     # Email Configuration
-    EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "resend")  # resend, aws_ses, sendgrid
-    EMAIL_FROM_ADDRESS: str = os.getenv("EMAIL_FROM_ADDRESS", "noreply@example.com")
-    EMAIL_FROM_NAME: str = os.getenv("EMAIL_FROM_NAME", "Mudda AI")
+    EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "brevo")  # resend, aws_ses, sendgrid
+    EMAIL_FROM_ADDRESS: str = os.getenv("EMAIL_FROM_ADDRESS", "project.mudda@gmail.com")
+    EMAIL_FROM_NAME: str = os.getenv("EMAIL_FROM_NAME", "Mudda AI - Automated Email")
 
     # Resend Email
     RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    RESEND_EMAIL_FROM_ADDRESS: str = os.getenv("RESEND_EMAIL_FROM_ADDRESS", "")
+    RESEND_EMAIL_FROM_NAME: str = os.getenv("RESEND_EMAIL_FROM_NAME", "Mudda AI - Automated Email (Resend)")
 
     # AWS SES
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -35,6 +37,9 @@ class Settings:
 
     # SendGrid
     SENDGRID_API_KEY: str = os.getenv("SENDGRID_API_KEY", "")
+
+    # Brevo
+    BREVO_API_KEY: str = os.getenv("BREVO_API_KEY", "")
 
     # Temporal
     TEMPORAL_HOST: str = os.getenv("TEMPORAL_HOST", "localhost:7233")

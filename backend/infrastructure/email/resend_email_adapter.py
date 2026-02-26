@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List, Optional
 import resend
 from config import settings
-from .email_service import EmailService
+from .email_service import EmailService, EmailPayload
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +24,16 @@ class ResendEmailAdapter(EmailService):
         self.default_from_email: str = settings.EMAIL_FROM_ADDRESS
         self.default_from_name: str = settings.EMAIL_FROM_NAME
 
-    async def send_email(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def send_email(self, payload: EmailPayload) -> Dict[str, Any]:
         to: List[str] = self._normalise_recipients(payload.get("to"))
-        subject: str = payload.get("subject", "").strip()
+        subject: str = (payload.get("subject") or "").strip()
         body_text: Optional[str] = payload.get("body")
         body_html: Optional[str] = payload.get("html")
 
         if not to:
-            raise ValueError("ResendEmailAdapter.send_email: 'to' field is required")
+            raise ValueError("ResendEmailAdapter.send_email: Recipient list is empty")
         if not subject:
-            raise ValueError("ResendEmailAdapter.send_email: 'subject' field is required")
+            raise ValueError("ResendEmailAdapter.send_email: Email subject is empty")
         if not body_text and not body_html:
             raise ValueError(
                 "ResendEmailAdapter.send_email: either 'body' (text) or 'html' is required"
