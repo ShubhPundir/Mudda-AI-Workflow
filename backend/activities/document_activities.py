@@ -8,13 +8,13 @@ import logging
 from typing import Any, Dict
 from temporalio import activity
 
-from infrastructure.llm_service import LLMService
-from infrastructure.pdf_generator import PDFGenerator
+from infrastructure import LLMFactory, PDFFactory
 
 logger = logging.getLogger(__name__)
 
 # Module-level instances
-_pdf_generator = PDFGenerator()
+_llm_service = LLMFactory.get_llm_service()
+_pdf_service = PDFFactory.get_pdf_service()
 
 
 @activity.defn
@@ -42,7 +42,7 @@ async def generate_report(input: Dict[str, Any]) -> Dict[str, Any]:
     logger.info("generate_report activity — step_id=%s", step_id)
 
     # Step 1: Generate text via LLM
-    report_text = await LLMService.generate_report(input)
+    report_text = await _llm_service.generate_report(input)
 
     # Step 2: Generate PDF
     metadata = {
@@ -50,7 +50,7 @@ async def generate_report(input: Dict[str, Any]) -> Dict[str, Any]:
         "report_type": input.get("report_type", "summary"),
         "step_id": step_id,
     }
-    pdf_result = await _pdf_generator.generate(
+    pdf_result = await _pdf_service.generate(
         content=report_text,
         metadata=metadata,
     )
