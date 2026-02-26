@@ -1,6 +1,6 @@
 from .llm_service import LLMService
 from .llm_factory import LLMFactory
-from .gemini_client import GeminiLLMAdapter
+from .gemini_llm_adapter import GeminiLLMAdapter
 
 __all__ = [
     "LLMService",

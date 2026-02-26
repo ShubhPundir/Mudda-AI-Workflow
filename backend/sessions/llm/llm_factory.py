@@ -1,5 +1,5 @@
 from .llm_service import LLMService
-from .gemini_client import GeminiLLMAdapter
+from .gemini_llm_adapter import GeminiLLMAdapter
 
 class LLMFactory:
     """
