@@ -60,11 +60,12 @@ async def main():
         }
 
         # Execute Workflow
+        workflow_id = f"report-wf-{int(asyncio.get_event_loop().time())}"
         try:
             result = await client.execute_workflow(
                 ExampleReportWorkflow.run,
                 workflow_input,
-                id="example-report-workflow-id",
+                id=workflow_id,
                 task_queue=task_queue,
                 execution_timeout=timedelta(minutes=10),
             )

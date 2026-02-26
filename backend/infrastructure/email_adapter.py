@@ -10,6 +10,7 @@ Design rules (infrastructure layer):
 Resend Python SDK: https://resend.com/docs/send-with-python
 """
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
 import resend
@@ -121,8 +122,24 @@ class EmailAdapter:
         if payload.get("tags"):
             params["tags"] = payload["tags"]
         if payload.get("attachments"):
-            # Resend attachments: [{"content": b64, "filename": "x.pdf"}, {"path": "path/to/file"}]
-            params["attachments"] = payload["attachments"]
+            # Resend attachments: [{"content": bytes, "filename": "x.pdf"}, {"path": "url"}]
+            processed_attachments = []
+            for att in payload["attachments"]:
+                if "path" in att and not att["path"].startswith(("http://", "https://")):
+                    # It's a local file. Read it and convert to 'content' for Resend.
+                    try:
+                        with open(att["path"], "rb") as f:
+                            content_bytes = list(f.read())  # Resend SDK often expects a list of ints or bytes
+                            processed_attachments.append({
+                                "filename": att.get("filename", os.path.basename(att["path"])),
+                                "content": content_bytes
+                            })
+                    except Exception as e:
+                        logger.error("Failed to read attachment at %s: %s", att["path"], e)
+                        raise ValueError(f"Could not read attachment file: {att['path']}")
+                else:
+                    processed_attachments.append(att)
+            params["attachments"] = processed_attachments
 
         logger.info(
             "Sending email via Resend — to=%s subject=%r attachment_count=%d",
