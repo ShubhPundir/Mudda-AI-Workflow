@@ -8,16 +8,15 @@ import logging
 from typing import Any, Dict
 from temporalio import activity
 
-from infrastructure import LLMFactory, PDFFactory
+from infrastructure import PDFFactory
+from sessions.llm import LLMFactory
+import logging
 
 logger = logging.getLogger(__name__)
 
 # Module-level instances
 _llm_service = LLMFactory.get_llm_service()
 _pdf_service = PDFFactory.get_pdf_service()
-
-
-@activity.defn
 async def generate_report(input: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate a report document (AI text + PDF).

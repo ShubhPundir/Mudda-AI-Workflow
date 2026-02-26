@@ -148,8 +148,12 @@ async def test_integration_brevo_real_email():
     
     try:
         result = await adapter.send_email(payload)
-        print(f"✅ Brevo accepted the request! Message ID: {result['message_id']}")
-        print(f"ℹ️ If you still don't see it in {target_email}, verify that your Brevo account is active and '{settings.EMAIL_FROM_ADDRESS}' is a verified sender.")
+        print(f"✅ Brevo API accepted the request! Message ID: {result['message_id']}")
+        print(f"CRITICAL CHECKLIST IF EMAIL NOT RECEIVED:")
+        print(f"1. VERIFIED SENDER: Is '{settings.EMAIL_FROM_ADDRESS}' a verified sender in Brevo? (Dashboard -> Senders & Domains)")
+        print(f"2. SPAM FOLDER: Check shb.pndr@gmail.com's Spam/Junk folder.")
+        print(f"3. BREVO LOGS: Check 'Transactional -> Logs' in your Brevo dashboard to see the actual delivery status.")
+        print(f"4. ACCOUNT STATUS: Is your Brevo account activated? New accounts sometimes require a manual review before transactional emails are sent.")
         assert "message_id" in result
     except Exception as e:
         pytest.fail(f"Real Brevo email sending failed: {e}")

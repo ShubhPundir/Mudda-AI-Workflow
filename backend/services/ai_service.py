@@ -7,13 +7,11 @@ import asyncio
 from typing import Dict, Any, List, TypedDict, Annotated, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.component_service import ComponentService
-from sessions.gemini_client import gemini_client
-
 # LangGraph imports
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
-
+from sessions.llm.llm_factory import LLMFactory
 
 class GraphState(TypedDict):
     """State management for LangGraph"""
@@ -34,7 +32,7 @@ class AIService:
     """
 
     def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        self.llm = LLMFactory.get_llm_service()
         self._setup_graph()
 
     def _setup_graph(self):
@@ -80,12 +78,10 @@ Available Components (minimal info):
 Select the component IDs that are relevant for solving this problem.
 """
             
-            response = await self.llm.ainvoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=selection_prompt)
-            ])
+            prompt = f"{system_prompt}\n\n{selection_prompt}"
+            response = await self.llm.generate_async(prompt)
             
-            response_text = self._serialize_ai_response(response.content)
+            response_text = self._serialize_ai_response(response.text if hasattr(response, "text") else str(response))
             selection_result = json.loads(response_text)
             
             selected_ids = selection_result.get("selected_component_ids", [])
@@ -128,12 +124,10 @@ Selected Components (full details):
 Generate a workflow plan to resolve this civic issue using the selected components.
 """
             
-            response = await self.llm.ainvoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=workflow_prompt)
-            ])
+            prompt = f"{system_prompt}\n\n{workflow_prompt}"
+            response = await self.llm.generate_async(prompt)
             
-            response_text = self._serialize_ai_response(response.content)
+            response_text = self._serialize_ai_response(response.text if hasattr(response, "text") else str(response))
             workflow_json = json.loads(response_text)
             
             # Validate
