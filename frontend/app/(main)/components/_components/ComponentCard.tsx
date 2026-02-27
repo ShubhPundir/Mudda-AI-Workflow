@@ -35,9 +35,14 @@ export default function ComponentCard({ component, onClick }: ComponentCardProps
             </p>
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    {component.type}
-                </span>
+                <div className="flex items-center space-x-1.5">
+                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                        {component.activities?.length || 0}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                        Activities
+                    </span>
+                </div>
                 <div className="flex items-center text-primary-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
                     View Details
                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -112,13 +112,31 @@ export default function ComponentsPage() {
             ),
           },
           {
-            key: 'type',
-            header: 'Type',
-            width: 'w-28',
+            key: 'activities',
+            header: 'Activities',
+            width: 'w-48',
             render: (component: Component) => (
-              <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-                {component.type}
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  {component.activities?.length || 0} Activities
+                </span>
+                <div className="flex -space-x-1 overflow-hidden">
+                  {component.activities?.slice(0, 3).map((act, idx) => (
+                    <div 
+                      key={idx}
+                      className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-[8px] font-bold text-gray-500 border border-gray-200"
+                      title={act.activity_name}
+                    >
+                      {act.activity_name.substring(0, 2).toUpperCase()}
+                    </div>
+                  ))}
+                  {(component.activities?.length || 0) > 3 && (
+                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-50 flex items-center justify-center text-[8px] font-bold text-gray-400 border border-gray-200">
+                      +{(component.activities?.length || 0) - 3}
+                    </div>
+                  )}
+                </div>
+              </div>
             ),
           },
           {
@@ -127,21 +145,6 @@ export default function ComponentsPage() {
             width: 'w-40',
             render: (component: Component) => (
               <span className="text-gray-600 font-medium">{component.category || 'N/A'}</span>
-            ),
-          },
-          {
-            key: 'endpoint_url',
-            header: 'Endpoint',
-            width: 'min-w-[300px]',
-            render: (component: Component) => (
-              <div className="flex items-center space-x-2 min-w-0">
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                <span className="text-sm text-gray-600 font-mono truncate">
-                  {component.endpoint_url}
-                </span>
-              </div>
             ),
           },
           {

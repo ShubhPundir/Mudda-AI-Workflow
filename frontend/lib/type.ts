@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
 
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -37,25 +37,29 @@ export interface ProblemStatementRequest {
   problem_statement: string;
 }
 
+export interface ComponentActivity {
+  activity_name: string;
+  retry_policy?: {
+    initial_interval?: number;
+    backoff_coefficient?: number;
+    maximum_interval?: number;
+    maximum_attempts?: number;
+    non_retryable_error_types?: string[];
+  };
+  timeout?: number;
+  metadata?: Record<string, any>;
+}
+
 export interface Component {
   id: string;
   name: string;
   description?: string;
-  type: string;
   category?: string;
-  endpoint_url: string;
-  http_method?: string;
-  query_template?: string;
-  rpc_function?: string;
-  auth_type?: string;
-  auth_config?: Record<string, any>;
-  request_schema?: Record<string, any>;
-  response_schema?: Record<string, any>;
-  path_params?: Record<string, any> | any[] | string[];
-  query_params?: Record<string, any>;
   version?: string;
   owner_service?: string;
   is_active?: boolean;
+  activities: ComponentActivity[];
+  config?: Record<string, any>;
   created_at?: string;
   updated_at?: string;
 }
@@ -63,18 +67,9 @@ export interface Component {
 export interface ComponentCreateRequest {
   name: string;
   description?: string;
-  type: string;
   category?: string;
-  endpoint_url: string;
-  http_method?: string;
-  query_template?: string;
-  rpc_function?: string;
-  auth_type?: string;
-  auth_config?: Record<string, any>;
-  request_schema?: Record<string, any>;
-  response_schema?: Record<string, any>;
-  path_params?: Record<string, any> | any[] | string[];
-  query_params?: Record<string, any>;
   version?: string;
   owner_service?: string;
+  activities: ComponentActivity[];
+  config?: Record<string, any>;
 }
