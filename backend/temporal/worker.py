@@ -53,37 +53,26 @@ class TemporalWorkerManager:
         Activities are registered as individual async functions — NOT as a class.
         """
         from workflows.mudda_workflow import MuddaWorkflow
-        from activities import (
-            dispatch_component_step,
-            send_notification,
-            contact_plumber,
-            contact_contractor,
-            generate_report,
-            update_issue,
-            update_execution_status,
-        )
+        import activities
+
+        # Collect all activities registered in activities/__init__.py
+        all_activities = [
+            getattr(activities, name) 
+            for name in activities.__all__
+        ]
 
         worker = Worker(
             client,
             task_queue=TASK_QUEUE,
             workflows=[MuddaWorkflow],
-            activities=[
-                dispatch_component_step,
-                send_notification,
-                contact_plumber,
-                contact_contractor,
-                generate_report,
-                update_issue,
-                update_execution_status,
-            ],
+            activities=all_activities,
         )
 
         logger.info(
             "Worker created — task_queue=%s workflows=[MuddaWorkflow] "
-            "activities=[dispatch_component_step, send_notification, "
-            "contact_plumber, contact_contractor, generate_report, "
-            "update_issue, update_execution_status]",
+            "activities=%s",
             TASK_QUEUE,
+            activities.__all__,
         )
         return worker
 

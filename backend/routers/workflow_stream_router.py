@@ -33,7 +33,7 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
     
     try:
         # Stream progress events from AI service
-        async for event in ai_service.generate_workflow_plan_stream(db, problem_statement):
+        async for event in ai_service.generate_workflow_plan_stream(problem_statement):
             event_type = event.get("event", "message")
             event_data = event.get("data", {})
             

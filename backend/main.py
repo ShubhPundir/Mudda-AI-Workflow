@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from sessions.database import engine
 from models import Base
-from routers import component_router, workflow_router, workflow_stream_router, health_router
+from sqlalchemy import text
+from routers import workflow_router, workflow_stream_router, health_router, activity_router
 
 # Create database tables
 # Base.metadata.create_all(bind=engine)
@@ -18,7 +19,10 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables on startup
     async with engine.begin() as conn:
+        print("DEBUG: Application starting - creating database schema and tables...")
+        await conn.execute(text("CREATE SCHEMA IF NOT EXISTS workflow"))
         await conn.run_sync(Base.metadata.create_all)
+        print("DEBUG: Database initialization complete.")
     yield
     # NOTE: don't use this for now
 
@@ -32,6 +36,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
+    # lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -45,7 +50,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router)
-app.include_router(component_router)
+app.include_router(activity_router)
 app.include_router(workflow_router)
 app.include_router(workflow_stream_router)
 

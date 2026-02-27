@@ -32,7 +32,7 @@ class WorkflowService:
         """
         try:
             # Generate the workflow plan using AI
-            workflow_json = await ai_service.generate_workflow_plan(db, request.problem_statement)
+            workflow_json = await ai_service.generate_workflow_plan(request.problem_statement)
             
             # Save to database
             workflow_plan = WorkflowPlan(

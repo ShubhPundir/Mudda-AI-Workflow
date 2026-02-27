@@ -1,20 +1,19 @@
 """
-External service activities for contacting plumber and contractor services.
+External service activities for contacting plumber and 
+contractor (deprecated) --> Next patch should include an inheritance structure for external activity
 
-Uses PlumberAPIAdapter and ContractorAPIAdapter from the infrastructure layer.
+services.
+Uses PlumberAPIAdapter from the infrastructure layer.
 """
 import logging
 from typing import Any, Dict
 from temporalio import activity
-
-from infrastructure.plumber_api_adapter import PlumberAPIAdapter
-from infrastructure.contractor_api_adapter import ContractorAPIAdapter
+from infrastructure.plumber.plumber_factory import PlumberFactory
 
 logger = logging.getLogger(__name__)
 
 # Module-level adapter instances
-_plumber_adapter = PlumberAPIAdapter()
-_contractor_adapter = ContractorAPIAdapter()
+_plumber_service = PlumberFactory.get_plumber_service()
 
 
 @activity.defn
@@ -36,7 +35,7 @@ async def contact_plumber(input: Dict[str, Any]) -> Dict[str, Any]:
     step_id = input.get("step_id", "unknown")
     logger.info("contact_plumber activity — step_id=%s", step_id)
 
-    result = await _plumber_adapter.contact(input)
+    result = await _plumber_service.contact(input)
 
     return {
         "step_id": step_id,
@@ -47,29 +46,14 @@ async def contact_plumber(input: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @activity.defn
-async def contact_contractor(input: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Contact the contractor external service.
+async def await_plumber_confirmation_activity(input: Dict[str, Any]) -> Dict[str, Any]:
+    """Logs that a follow-up is expected from the plumber."""
+    logger.info("await_plumber_confirmation_activity: follow-up expected")
 
-    Args:
-        input: Dict containing project details, scope, budget, etc.
-            - step_id (str, optional): Originating workflow step ID.
-            - issue_id (str, optional): Related civic issue ID.
-            - scope (str, optional): Work scope description.
-            - budget (float, optional): Estimated budget.
-            - timeline (str, optional): Expected timeline.
+    # TODO: Implement actual waiting mechanism (e.g., polling, signal) in Backend
 
-    Returns:
-        Structured JSON with service response.
-    """
-    step_id = input.get("step_id", "unknown")
-    logger.info("contact_contractor activity — step_id=%s", step_id)
-
-    result = await _contractor_adapter.contact(input)
-
+    # Simulation: Log to DB or system that we are waiting for a signal
     return {
-        "step_id": step_id,
-        "service": "contractor",
-        "result": result,
-        "status": "completed",
+        "status": "waiting_for_signal",
+        "message": "System is now expecting a follow-up signal from plumber"
     }
