@@ -9,7 +9,7 @@ from datetime import datetime
 class WorkflowStepSchema(BaseModel):
     """Schema for individual workflow step"""
     step_id: str
-    component_id: str
+    activity_id: str
     description: str
     inputs: Dict[str, Any]
     outputs: List[str]
