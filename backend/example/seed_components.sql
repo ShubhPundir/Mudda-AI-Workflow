@@ -8,7 +8,7 @@ VALUES
     'Emergency Services',
     '[
         {"activity_name": "llm_generate_dispatch_text_activity", "retry_policy": {"initial_interval": 5, "maximum_attempts": 3}},
-        {"activity_name": "plumber_dispatch_activity", "retry_policy": {"initial_interval": 10, "maximum_attempts": 5}},
+        {"activity_name": "contact_plumber", "retry_policy": {"initial_interval": 10, "maximum_attempts": 5}},
         {"activity_name": "human_feedback_activity", "retry_policy": {"initial_interval": 60, "maximum_attempts": 1}}
     ]'::jsonb
 ),
@@ -28,7 +28,7 @@ VALUES
             "retry_policy": {"maximum_attempts": 2}
         },
         {
-            "activity_name": "update_issue_completion_activity", 
+            "activity_name": "update_issue", 
             "purpose": "Update internal issue record with plumber feedback/results.",
             "retry_policy": {"maximum_attempts": 3}
         }
@@ -41,6 +41,6 @@ VALUES
     '[
         {"activity_name": "generate_llm_content", "retry_policy": {"maximum_attempts": 3}},
         {"activity_name": "pdf_service_activity", "retry_policy": {"maximum_attempts": 3}},
-        {"activity_name": "send_email_activity", "retry_policy": {"maximum_attempts": 3}}
+        {"activity_name": "send_notification", "retry_policy": {"maximum_attempts": 3}}
     ]'::jsonb
 );
