@@ -1,4 +1,3 @@
-from .dispatcher import dispatch_component_step
 from .notification_activities import send_notification
 from .external_service_activities import (
     contact_plumber, 
@@ -11,7 +10,6 @@ from .llm_activities import llm_generate_dispatch_text_activity, generate_llm_co
 from .human_activities import human_feedback_activity, human_verification_activity
 
 __all__ = [
-    "dispatch_component_step",
     "send_notification",
     "contact_plumber",
     "await_plumber_confirmation_activity",

@@ -19,10 +19,9 @@ from typing import Any, Dict
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
-# Import activity references — these are used as callables in execute_activity,
-# but the actual code runs in the worker process, not here.
+# Import activity references
 with workflow.unsafe.imports_passed_through():
-    from activities.dispatcher import dispatch_component_step
+    from activities.registry import ACTIVITY_REGISTRY
     from activities.execution_tracking_activities import update_execution_status
 
 
@@ -35,7 +34,7 @@ class MuddaWorkflow:
     across the lifetime of a single workflow execution.
     """
 
-    def __init__(self) -> None:
+    def __init__(self) -> True:
         self.execution_results: Dict[str, Any] = {}
         self.ai_context: Dict[str, Any] = {}
         self.approved_steps: Dict[str, bool] = {}
@@ -47,11 +46,6 @@ class MuddaWorkflow:
     def approve_step(self, step_id: str) -> None:
         """
         Signal handler: mark a step as approved.
-
-        Call from external code via:
-            await client.get_workflow_handle(wf_id).signal(
-                MuddaWorkflow.approve_step, "step-3"
-            )
         """
         workflow.logger.info("Step approved via signal — step_id=%s", step_id)
         self.approved_steps[step_id] = True
@@ -76,7 +70,7 @@ class MuddaWorkflow:
         self, workflow_plan: Dict[str, Any], execution_id: str
     ) -> Dict[str, Any]:
         """
-        Execute a complete workflow plan.
+        Execute a complete workflow plan composed of activities.
 
         Args:
             workflow_plan: The workflow plan to execute (contains 'steps' list).
@@ -115,14 +109,14 @@ class MuddaWorkflow:
         # ── Execute steps sequentially (DAG order) ───────────────────
         for step in steps:
             step_id: str = step["step_id"]
-            component_id: str = step["component_id"]
+            activity_id: str = step["activity_id"]
             inputs: Dict[str, Any] = step.get("inputs", {})
             requires_approval: bool = step.get("requires_approval", False)
 
             workflow.logger.info(
-                "Processing step — step_id=%s component_id=%s approval=%s",
+                "Processing step — step_id=%s activity_id=%s approval=%s",
                 step_id,
-                component_id,
+                activity_id,
                 requires_approval,
             )
 
@@ -136,27 +130,34 @@ class MuddaWorkflow:
                 )
                 workflow.logger.info("Approval received — step_id=%s", step_id)
 
-            # ── Execute the component step via dispatcher ────────────
+            # ── Execute the activity directly ────────────
             try:
+                activity_handler = ACTIVITY_REGISTRY.get(activity_id)
+                if not activity_handler:
+                    raise ValueError(f"Activity '{activity_id}' not found in registry")
+
+                # Resolve template variables in inputs (very basic version)
+                # In production, this would be more robust
+                resolved_inputs = self._resolve_templates(inputs)
+
                 result = await workflow.execute_activity(
-                    dispatch_component_step,
-                    args=[{
-                        "component_id": component_id,
-                        "inputs": inputs,
-                        "step_id": step_id,
-                    }],
-                    start_to_close_timeout=timedelta(minutes=10),
+                    activity_handler,
+                    args=[resolved_inputs],
+                    start_to_close_timeout=timedelta(minutes=5),
                     retry_policy=retry,
                 )
 
                 # Store results in workflow state
                 self.execution_results[step_id] = result
-                self.ai_context[step_id] = result.get("ai_metadata", {})
+                
+                # Update ai_context if relevant
+                if isinstance(result, dict) and "ai_metadata" in result:
+                    self.ai_context[step_id] = result["ai_metadata"]
 
                 workflow.logger.info(
-                    "Step completed — step_id=%s status=%s",
+                    "Step completed — step_id=%s activity=%s",
                     step_id,
-                    result.get("status"),
+                    activity_id,
                 )
 
             except Exception as exc:
@@ -207,3 +208,34 @@ class MuddaWorkflow:
             "results": self.execution_results,
             "ai_context": self.ai_context,
         }
+
+    def _resolve_templates(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Basic template resolver for activity inputs.
+        Supports {{step_id.output_key}} or generic {{key}}.
+        """
+        resolved = {}
+        for k, v in inputs.items():
+            if isinstance(v, str) and v.startswith("{{") and v.endswith("}}"):
+                path = v[2:-2].strip()
+                if "." in path:
+                    step_id, key = path.split(".", 1)
+                    step_result = self.execution_results.get(step_id, {})
+                    if isinstance(step_result, dict):
+                        resolved[k] = step_result.get(key, v)
+                    else:
+                        resolved[k] = v
+                else:
+                    # Generic input from elsewhere or root level (e.g., issue_id)
+                    # For now, searching in all results or keeping as is
+                    found = False
+                    for result in self.execution_results.values():
+                        if isinstance(result, dict) and path in result:
+                            resolved[k] = result[path]
+                            found = True
+                            break
+                    if not found:
+                        resolved[k] = v
+            else:
+                resolved[k] = v
+        return resolved
