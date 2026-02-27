@@ -28,7 +28,6 @@ class ComponentService:
             description=component_data.description,
             category=component_data.category,
             version=component_data.version,
-            owner_service=component_data.owner_service,
             activities=component_data.activities,
             config=component_data.config
         )
@@ -43,7 +42,6 @@ class ComponentService:
             description=component.description,
             category=component.category,
             version=component.version,
-            owner_service=component.owner_service,
             is_active=component.is_active,
             activities=component.activities,
             config=component.config,
@@ -74,7 +72,6 @@ class ComponentService:
             description=component.description,
             category=component.category,
             version=component.version,
-            owner_service=component.owner_service,
             is_active=component.is_active,
             activities=component.activities,
             config=component.config,
@@ -97,7 +94,6 @@ class ComponentService:
                         description=component_response.description,
                         category=component_response.category,
                         version=component_response.version,
-                        owner_service=component_response.owner_service,
                         activities=component_response.activities,
                         config=component_response.config
                     )
@@ -119,7 +115,6 @@ class ComponentService:
                 description=component.description,
                 category=component.category,
                 version=component.version,
-                owner_service=component.owner_service,
                 is_active=component.is_active,
                 activities=component.activities,
                 config=component.config,

@@ -22,7 +22,6 @@ class Component(Base):
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     category = Column(Text, nullable=True)  # e.g., "Home Services", "Gov Notifications"
-    owner_service = Column(Text, nullable=True)
     version = Column(String(20), nullable=True, default='1.0')
     is_active = Column(Boolean, nullable=False, default=True)
 

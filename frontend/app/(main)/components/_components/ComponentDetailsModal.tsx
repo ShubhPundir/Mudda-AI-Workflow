@@ -48,10 +48,6 @@ export default function ComponentDetailsModal({
             <h4 className="text-sm font-medium text-gray-500 mb-1">Version</h4>
             <p className="text-gray-900">{component.version || '1.0'}</p>
           </div>
-          <div>
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Owner Service</h4>
-            <p className="text-gray-900">{component.owner_service || 'N/A'}</p>
-          </div>
         </div>
 
         <div className="border-t border-gray-100 pt-6">
@@ -79,6 +75,12 @@ export default function ComponentDetailsModal({
                       </span>
                     )}
                   </div>
+                  
+                  {activity.description && (
+                    <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                      {activity.description}
+                    </p>
+                  )}
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     {activity.retry_policy && (

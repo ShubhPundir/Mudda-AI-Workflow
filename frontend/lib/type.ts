@@ -39,6 +39,7 @@ export interface ProblemStatementRequest {
 
 export interface ComponentActivity {
   activity_name: string;
+  description?: string;
   retry_policy?: {
     initial_interval?: number;
     backoff_coefficient?: number;
@@ -56,7 +57,6 @@ export interface Component {
   description?: string;
   category?: string;
   version?: string;
-  owner_service?: string;
   is_active?: boolean;
   activities: ComponentActivity[];
   config?: Record<string, any>;
@@ -69,7 +69,6 @@ export interface ComponentCreateRequest {
   description?: string;
   category?: string;
   version?: string;
-  owner_service?: string;
   activities: ComponentActivity[];
   config?: Record<string, any>;
 }

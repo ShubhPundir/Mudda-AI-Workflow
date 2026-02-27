@@ -28,9 +28,39 @@ from activities import (
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Component Registry
-# Maps activity names (string) to the actual activity function.
+# Activity Registry & Metadata
+# Maps activity names (string) to the actual activity function and metadata.
 # ---------------------------------------------------------------------------
+ACTIVITY_METADATA: Dict[str, Dict[str, str]] = {
+    "send_notification": {
+        "description": "Sends an email notification via the infrastructure layer."
+    },
+    "contact_plumber": {
+        "description": "Initiates an automated API call to the plumber dispatch system."
+    },
+    "await_plumber_confirmation_activity": {
+        "description": "Registers a wait state, expecting a manual signal from the plumber."
+    },
+    "pdf_service_activity": {
+        "description": "Generates a PDF report using AI content and local templates, then uploads to S3."
+    },
+    "update_issue": {
+        "description": "Synchronizes the current workflow state with the main database issue record."
+    },
+    "llm_generate_dispatch_text_activity": {
+        "description": "Uses LLM to generate highly contextualized dispatch instructions."
+    },
+    "generate_llm_content": {
+        "description": "Generic AI content generation for reports and summaries."
+    },
+    "human_feedback_activity": {
+        "description": "Pauses execution for a required approval/input from an official."
+    },
+    "human_verification_activity": {
+        "description": "Specific human-in-the-loop verification for completed external work."
+    },
+}
+
 COMPONENT_REGISTRY: Dict[str, Any] = {
     "send_notification": send_notification,
     "contact_plumber": contact_plumber,
@@ -133,13 +163,16 @@ async def dispatch_component_step(input: Dict[str, Any]) -> Dict[str, Any]:
 
         # Prepare activity inputs
         # Merge cumulative inputs, activity metadata, and component config
+        description = act_config.get("description") or ACTIVITY_METADATA.get(activity_name, {}).get("description", "")
+        
         activity_inputs = {
             **cumulative_inputs,
             "metadata": act_config.get("metadata", {}),
             "config": component.config,
             "step_id": step_id,
             "component_id": str(component.id),
-            "component_name": component.name
+            "component_name": component.name,
+            "activity_description": description
         }
 
         # Execute activity with local retry policy from DB

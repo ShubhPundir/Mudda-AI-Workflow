@@ -13,7 +13,6 @@ class ComponentSchema(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     version: Optional[str] = "1.0"
-    owner_service: Optional[str] = None
     is_active: Optional[bool] = True
     activities: List[Dict[str, Any]] = []
     config: Optional[Dict[str, Any]] = {}
@@ -27,7 +26,6 @@ class ComponentCreateRequest(BaseModel):
     description: Optional[str] = Field(None, description="What the component does")
     category: Optional[str] = Field(None, description="Optional category like 'Home Services'")
     version: Optional[str] = Field("1.0", description="Component version")
-    owner_service: Optional[str] = Field(None, description="Owning microservice")
     activities: List[Dict[str, Any]] = Field(..., description="List of activities this component orchestrates")
     config: Optional[Dict[str, Any]] = Field({}, description="Component-wide configuration")
 
@@ -39,7 +37,6 @@ class ComponentResponse(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     version: Optional[str] = "1.0"
-    owner_service: Optional[str] = None
     is_active: bool
     activities: List[Dict[str, Any]]
     config: Optional[Dict[str, Any]] = {}
@@ -61,6 +58,5 @@ class ComponentForAI(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     version: Optional[str] = "1.0"
-    owner_service: Optional[str] = None
     activities: List[Dict[str, Any]]
     config: Optional[Dict[str, Any]] = {}

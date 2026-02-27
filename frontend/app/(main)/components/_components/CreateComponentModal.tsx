@@ -209,6 +209,19 @@ export default function CreateComponentModal({
                     />
                   </div>
                   
+                  <div className="md:col-span-3">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                      Activity Description
+                    </label>
+                    <input
+                      type="text"
+                      value={activity.description || ''}
+                      onChange={(e) => handleActivityChange(index, 'description', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                      placeholder="Briefly describe what this activity does in this component..."
+                    />
+                  </div>
+                  
                   {/* Retry Policy Miniature Form */}
                   <div className="md:col-span-3 grid grid-cols-2 gap-4 mt-2 bg-white p-3 rounded-lg border border-gray-100">
                     <div>
