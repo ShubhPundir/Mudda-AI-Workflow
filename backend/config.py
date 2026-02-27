@@ -35,6 +35,9 @@ class Settings:
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
     AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
 
+    # S3 Configuration
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "mudda-documents")
+    
     # SendGrid
     SENDGRID_API_KEY: str = os.getenv("SENDGRID_API_KEY", "")
 
@@ -56,6 +59,7 @@ class Settings:
     APP_NAME: str = "Mudda AI Workflow System"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
+
 
 
 settings = Settings()

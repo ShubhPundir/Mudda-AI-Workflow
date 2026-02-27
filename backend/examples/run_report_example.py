@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 # Import our workflow and activities
 from examples.example_report_workflow import ExampleReportWorkflow
-from activities.document_activities import generate_report
+from activities.document_activities import pdf_service_activity
 from activities.notification_activities import send_notification
 
 # Load environment variables
@@ -43,7 +43,7 @@ async def main():
         client,
         task_queue=task_queue,
         workflows=[ExampleReportWorkflow],
-        activities=[generate_report, send_notification],
+        activities=[pdf_service_activity, send_notification],
     )
 
     async with worker:

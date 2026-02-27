@@ -10,7 +10,7 @@ from .external_service_activities import (
     contact_contractor,
     await_plumber_confirmation_activity
 )
-from .document_activities import generate_report, pdf_service_activity
+from .document_activities import pdf_service_activity
 from .issue_activities import update_issue
 from .execution_tracking_activities import update_execution_status
 from .llm_activities import llm_generate_dispatch_text_activity, generate_llm_content
@@ -22,7 +22,6 @@ __all__ = [
     "contact_plumber",
     "contact_contractor",
     "await_plumber_confirmation_activity",
-    "generate_report",
     "pdf_service_activity",
     "update_issue",
     "update_execution_status",

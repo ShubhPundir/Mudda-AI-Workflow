@@ -5,7 +5,7 @@ from temporalio import workflow
 # Import activities
 # In a real setup, we use string names or import the activity definitions
 with workflow.unsafe.imports_passed_through():
-    from activities.document_activities import generate_report
+    from activities.document_activities import pdf_service_activity
     from activities.notification_activities import send_notification
 
 @workflow.defn
@@ -24,9 +24,9 @@ class ExampleReportWorkflow:
         workflow.logger.info("Starting ExampleReportWorkflow for topic: %s", input_data.get("problem_statement"))
 
         # Step 1: Generate Report (AI + PDF)
-        # The generate_report activity internally calls LLMService and PDFGenerator
+        # The pdf_service_activity activity internally calls LLMService and PDFGenerator
         report_result = await workflow.execute_activity(
-            generate_report,
+            pdf_service_activity,
             input_data,
             start_to_close_timeout=timedelta(minutes=2),
         )

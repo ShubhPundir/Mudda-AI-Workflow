@@ -8,7 +8,7 @@ import logging
 from typing import Any, Dict
 from temporalio import activity
 
-from infrastructure import PDFFactory
+from infrastructure import PDFFactory, S3Service
 from sessions.llm import LLMFactory
 import logging
 
@@ -17,28 +17,20 @@ logger = logging.getLogger(__name__)
 # Module-level instances
 _llm_service = LLMFactory.get_llm_service()
 _pdf_service = PDFFactory.get_pdf_service()
-async def generate_report(input: Dict[str, Any]) -> Dict[str, Any]:
+
+@activity.defn
+async def pdf_service_activity(input: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Generate a report document (AI text + PDF).
+    Generate a report document (AI text + PDF) and upload to S3.
 
     Steps:
         1. Call LLMService to generate report text.
         2. Call PDFGenerator to create the PDF file.
-        3. Return file path + metadata.
-
-    Args:
-        input: Dict containing:
-            - problem_statement (str): The civic issue description.
-            - context (dict, optional): Additional context from prior steps.
-            - report_type (str, optional): 'summary' or 'detailed'.
-            - step_id (str, optional): Originating workflow step ID.
-            - title (str, optional): Report title.
-
-    Returns:
-        Structured JSON with file_path, filename, ai_metadata, etc.
+        3. Upload PDF to S3.
+        4. Return file path, S3 URL, and metadata.
     """
     step_id = input.get("step_id", "unknown")
-    logger.info("generate_report activity — step_id=%s", step_id)
+    logger.info("pdf_service_activity — step_id=%s", step_id)
 
     # Step 1: Generate text via LLM
     report_text = await _llm_service.generate_report(input)
@@ -54,16 +46,21 @@ async def generate_report(input: Dict[str, Any]) -> Dict[str, Any]:
         metadata=metadata,
     )
 
+    # Step 3: Upload to S3
+    s3_url = await S3Service.upload_document(pdf_result["file_path"])
+
     logger.info(
-        "Report generated — step_id=%s file=%s",
+        "Report generated and uploaded — step_id=%s file=%s s3=%s",
         step_id,
         pdf_result.get("file_path"),
+        s3_url
     )
 
     return {
         "step_id": step_id,
         "status": "completed",
         "file_path": pdf_result["file_path"],
+        "s3_url": s3_url,
         "filename": pdf_result["filename"],
         "size_bytes": pdf_result["size_bytes"],
         "ai_metadata": {
