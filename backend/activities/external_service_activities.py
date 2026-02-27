@@ -8,6 +8,7 @@ Uses PlumberAPIAdapter from the infrastructure layer.
 import logging
 from typing import Any, Dict
 from temporalio import activity
+from infrastructure.plumber.plumber_factory import PlumberFactory
 
 logger = logging.getLogger(__name__)
 
