@@ -14,29 +14,36 @@ VALUES
 ),
 (
     'plumber_followup_component', 
-    'Handle the reception of follow-up information from the plumber after dispatch. Designed for long-delayed responses using Temporal signals.', 
+    'Handle the reception of follow-up information from the plumber after dispatch.', 
     'Emergency Services',
     '[
         {
             "activity_name": "await_plumber_confirmation_activity", 
-            "purpose": "Initial fast call to notify system that a follow-up is expected.",
             "retry_policy": {"maximum_attempts": 1}
         },
         {
             "activity_name": "human_verification_activity", 
-            "purpose": "Allow government official to review plumber response after it arrives.",
             "retry_policy": {"maximum_attempts": 2}
         },
         {
             "activity_name": "update_issue", 
-            "purpose": "Update internal issue record with plumber feedback/results.",
             "retry_policy": {"maximum_attempts": 3}
         }
     ]'::jsonb
 ),
 (
+    'civic_issue_analyzer', 
+    'AI analysis of a civic issue followed by a PDF report generation and S3 upload.', 
+    'Analytics',
+    '[
+        {"activity_name": "generate_llm_content", "retry_policy": {"maximum_attempts": 3}},
+        {"activity_name": "pdf_service_activity", "retry_policy": {"maximum_attempts": 3}},
+        {"activity_name": "update_issue", "retry_policy": {"maximum_attempts": 2}}
+    ]'::jsonb
+),
+(
     'send_service_email', 
-    'Produce a PDF report for internal records and compliance.', 
+    'Generate content and send an email notification to external stakeholders.', 
     'Notifications',
     '[
         {"activity_name": "generate_llm_content", "retry_policy": {"maximum_attempts": 3}},

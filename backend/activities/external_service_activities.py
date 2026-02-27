@@ -1,19 +1,18 @@
 """
-External service activities for contacting plumber and contractor services.
+External service activities for contacting plumber and 
+contractor (deprecated) --> Next patch should include an inheritance structure for external activity
 
-Uses PlumberAPIAdapter and ContractorAPIAdapter from the infrastructure layer.
+services.
+Uses PlumberAPIAdapter from the infrastructure layer.
 """
 import logging
 from typing import Any, Dict
 from temporalio import activity
 
-from infrastructure import ContractorFactory, PlumberFactory
-
 logger = logging.getLogger(__name__)
 
 # Module-level adapter instances
 _plumber_service = PlumberFactory.get_plumber_service()
-_contractor_service = ContractorFactory.get_contractor_service()
 
 
 @activity.defn
@@ -44,34 +43,6 @@ async def contact_plumber(input: Dict[str, Any]) -> Dict[str, Any]:
         "status": "completed",
     }
 
-
-@activity.defn
-async def contact_contractor(input: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Contact the contractor external service.
-
-    Args:
-        input: Dict containing project details, scope, budget, etc.
-            - step_id (str, optional): Originating workflow step ID.
-            - issue_id (str, optional): Related civic issue ID.
-            - scope (str, optional): Work scope description.
-            - budget (float, optional): Estimated budget.
-            - timeline (str, optional): Expected timeline.
-
-    Returns:
-        Structured JSON with service response.
-    """
-    step_id = input.get("step_id", "unknown")
-    logger.info("contact_contractor activity — step_id=%s", step_id)
-
-    result = await _contractor_service.contact(input)
-
-    return {
-        "step_id": step_id,
-        "service": "contractor",
-        "result": result,
-        "status": "completed",
-    }
 
 @activity.defn
 async def await_plumber_confirmation_activity(input: Dict[str, Any]) -> Dict[str, Any]:

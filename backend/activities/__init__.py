@@ -1,13 +1,7 @@
-"""
-Activities package for Mudda AI Workflow system.
-
-Exports all activity functions that must be registered with the Temporal worker.
-"""
 from .dispatcher import dispatch_component_step
 from .notification_activities import send_notification
 from .external_service_activities import (
     contact_plumber, 
-    contact_contractor,
     await_plumber_confirmation_activity
 )
 from .document_activities import pdf_service_activity
@@ -20,7 +14,6 @@ __all__ = [
     "dispatch_component_step",
     "send_notification",
     "contact_plumber",
-    "contact_contractor",
     "await_plumber_confirmation_activity",
     "pdf_service_activity",
     "update_issue",

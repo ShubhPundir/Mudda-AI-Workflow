@@ -16,7 +16,6 @@ from temporalio.common import RetryPolicy
 from activities import (
     send_notification,
     contact_plumber,
-    contact_contractor,
     await_plumber_confirmation_activity,
     pdf_service_activity,
     update_issue,
@@ -35,7 +34,6 @@ logger = logging.getLogger(__name__)
 COMPONENT_REGISTRY: Dict[str, Any] = {
     "send_notification": send_notification,
     "contact_plumber": contact_plumber,
-    "contact_contractor": contact_contractor,
     "await_plumber_confirmation_activity": await_plumber_confirmation_activity,
     "pdf_service_activity": pdf_service_activity,
     "update_issue": update_issue,
