@@ -7,6 +7,8 @@ from models.issue import Issue, IssueStatus
 
 logger = logging.getLogger(__name__)
 
+# TODO: change the code to something cleaner
+
 async def fetch_issue_details(issue_id: str) -> Dict[str, Any]:
     """
     Fetch issue details from the database.
