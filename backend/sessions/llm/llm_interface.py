@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-class LLMService(ABC):
+class LLMInterface(ABC):
     """
     Abstract interface for LLM services.
     """

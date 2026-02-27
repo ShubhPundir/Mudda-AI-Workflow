@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-class PDFService(ABC):
+class PDFInterface(ABC):
     """
     Abstract interface for PDF generation services.
     """

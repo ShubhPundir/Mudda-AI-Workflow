@@ -4,13 +4,13 @@ from typing import Any, Dict
 from google import genai
 from google.genai import types
 
-from .llm_service import LLMService
+from .llm_interface import LLMInterface
 
 logger = logging.getLogger(__name__)
 
-class GeminiLLMAdapter(LLMService):
+class GeminiLLMAdapter(LLMInterface):
     """
-    Implementation of LLMService using Google Gemini.
+    Implementation of LLMInterface using Google Gemini.
     """
 
     def __init__(self):

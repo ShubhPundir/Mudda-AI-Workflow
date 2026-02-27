@@ -1,10 +1,10 @@
 from typing import Optional
-from .pdf_service import PDFService
+from .pdf_interface import PDFInterface
 from .fpdf_pdf_adapter import FPDFPDFAdapter
 
 class PDFFactory:
     """
-    Factory for creating PDFService instances.
+    Factory for creating PDFInterface instances.
     """
     _instance = None
 

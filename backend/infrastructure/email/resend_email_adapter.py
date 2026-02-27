@@ -3,13 +3,13 @@ import os
 from typing import Any, Dict, List, Optional
 import resend
 from config import settings
-from .email_service import EmailService, EmailPayload
+from .email_interface import EmailInterface, EmailPayload
 
 logger = logging.getLogger(__name__)
 
-class ResendEmailAdapter(EmailService):
+class ResendEmailAdapter(EmailInterface):
     """
-    Implementation of EmailService using Resend API.
+    Implementation of EmailInterface using Resend API.
     """
 
     def __init__(self) -> None:

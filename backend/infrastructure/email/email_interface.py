@@ -17,7 +17,7 @@ class EmailPayload(TypedDict, total=False):
     step_id: str
     issue_id: str
 
-class EmailService(ABC):
+class EmailInterface(ABC):
     """
     Abstract interface for email services.
     """

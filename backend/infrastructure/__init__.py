@@ -1,15 +1,15 @@
-from .email import EmailService, EmailFactory
-from .pdf import PDFService, PDFFactory
-from .contractor import ContractorService, ContractorFactory
-from .plumber import PlumberService, PlumberFactory
+from .email import EmailInterface, EmailFactory
+from .pdf import PDFInterface, PDFFactory
+from .contractor import ContractorInterface, ContractorFactory
+from .plumber import PlumberInterface, PlumberFactory
 
 __all__ = [
-    "EmailService",
+    "EmailInterface",
     "EmailFactory",
-    "PDFService",
+    "PDFInterface",
     "PDFFactory",
-    "ContractorService",
+    "ContractorInterface",
     "ContractorFactory",
-    "PlumberService",
+    "PlumberInterface",
     "PlumberFactory",
 ]

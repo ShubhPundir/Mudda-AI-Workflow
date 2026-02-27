@@ -1,6 +1,6 @@
 import logging
 from config import settings
-from .email_service import EmailService
+from .email_interface import EmailInterface
 from .resend_email_adapter import ResendEmailAdapter
 from .aws_ses_email_adapter import AWSSESEmailAdapter
 from .sendgrid_email_adapter import SendGridEmailAdapter
@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 class EmailFactory:
     """
-    Factory for creating EmailService instances.
+    Factory for creating EmailInterface instances.
     """
     _instance = None
 
     @classmethod
-    def get_email_service(cls) -> EmailService:
+    def get_email_service(cls) -> EmailInterface:
         if cls._instance is not None:
             return cls._instance
             

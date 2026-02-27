@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict, Optional
-from .contractor_service import ContractorService
+from .contractor_interface import ContractorInterface
 
 logger = logging.getLogger(__name__)
 
-class DefaultContractorAdapter(ContractorService):
+class DefaultContractorAdapter(ContractorInterface):
     """
     Default implementation for the Contractor API.
     """

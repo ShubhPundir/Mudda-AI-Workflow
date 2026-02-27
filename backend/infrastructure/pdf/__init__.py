@@ -1,9 +1,9 @@
-from .pdf_service import PDFService
+from .pdf_interface import PDFInterface
 from .pdf_factory import PDFFactory
 from .fpdf_pdf_adapter import FPDFPDFAdapter
 
 __all__ = [
-    "PDFService",
+    "PDFInterface",
     "PDFFactory",
     "FPDFPDFAdapter",
 ]

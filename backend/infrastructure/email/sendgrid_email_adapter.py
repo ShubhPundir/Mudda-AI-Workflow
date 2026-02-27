@@ -1,16 +1,16 @@
 import logging
 from typing import Any, Dict
-from .email_service import EmailService
+from .email_interface import EmailInterface
 
 logger = logging.getLogger(__name__)
 
-class SendGridEmailAdapter(EmailService):
+class SendGridEmailAdapter(EmailInterface):
     """
-    Placeholder implementation of EmailService using SendGrid.
+    Placeholder implementation of EmailInterface using SendGrid.
     """
 
     def __init__(self) -> None:
-        logger.info("SendGridEmailAdapter initialized (Placeholder)")
+        logger.info("SendGridEmailInterface initialized (Placeholder)")
 
     async def send_email(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("Sending email via SendGrid (Placeholder) — to=%s", payload.get("to"))

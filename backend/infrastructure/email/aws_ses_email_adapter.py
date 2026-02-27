@@ -2,14 +2,14 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 from typing import Any, Dict, List
-from .email_service import EmailService, EmailPayload
+from .email_interface import EmailInterface, EmailPayload
 from config import settings
 
 logger = logging.getLogger(__name__)
 
-class AWSSESEmailAdapter(EmailService):
+class AWSSESEmailAdapter(EmailInterface):
     """
-    Implementation of EmailService using AWS SES.
+    Implementation of EmailInterface using AWS SES.
     """
 
     def __init__(self) -> None:

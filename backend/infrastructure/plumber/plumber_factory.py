@@ -1,10 +1,10 @@
 from typing import Optional
-from .plumber_service import PlumberService
+from .plumber_interface import PlumberInterface
 from .default_plumber_adapter import DefaultPlumberAdapter
 
 class PlumberFactory:
     """
-    Factory for creating PlumberService instances.
+    Factory for creating PlumberInterface instances.
     """
     _instance = None
 

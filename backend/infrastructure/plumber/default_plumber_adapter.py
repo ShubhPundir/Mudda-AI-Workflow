@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict, Optional
-from .plumber_service import PlumberService
+from .plumber_interface import PlumberInterface
 
 logger = logging.getLogger(__name__)
 
-class DefaultPlumberAdapter(PlumberService):
+class DefaultPlumberAdapter(PlumberInterface):
     """
     Default implementation for the Plumber API.
     """

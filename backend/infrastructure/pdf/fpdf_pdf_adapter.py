@@ -3,13 +3,13 @@ import os
 from datetime import datetime
 from typing import Any, Dict, Optional
 from fpdf import FPDF, XPos, YPos
-from .pdf_service import PDFService
+from .pdf_interface import PDFInterface
 
 logger = logging.getLogger(__name__)
 
-class FPDFPDFAdapter(PDFService):
+class FPDFPDFAdapter(PDFInterface):
     """
-    Implementation of PDFService using the fpdf2 library.
+    Implementation of PDFInterface using the fpdf2 library.
     """
 
     def __init__(self, output_dir: Optional[str] = None):

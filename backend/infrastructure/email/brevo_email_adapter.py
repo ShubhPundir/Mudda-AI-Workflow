@@ -1,14 +1,14 @@
 import logging
 import httpx
 from typing import Any, Dict, List, Optional
-from .email_service import EmailService, EmailPayload
+from .email_interface import EmailInterface, EmailPayload
 from config import settings
 
 logger = logging.getLogger(__name__)
 
-class BrevoEmailAdapter(EmailService):
+class BrevoEmailAdapter(EmailInterface):
     """
-    Implementation of EmailService using Brevo (formerly Sendinblue) HTTP API.
+    Implementation of EmailInterface using Brevo (formerly Sendinblue) HTTP API.
     """
 
     def __init__(self) -> None:

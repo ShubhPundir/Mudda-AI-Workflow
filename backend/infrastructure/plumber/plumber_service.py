@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-class PlumberService(ABC):
+class PlumberInterface(ABC):
     """
     Abstract interface for Plumber services.
     """
