@@ -23,7 +23,7 @@ import { Save, RefreshCw, Search, X, ChevronRight, ChevronLeft, Trash2, Box, Ale
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import StepDetailsModal from './StepDetailsModal';
-import { Workflow, WorkflowStep, Component } from '@/lib/type';
+import { Workflow, WorkflowStep, ComponentActivity } from '@/lib/type';
 
 const nodeWidth = 250;
 const nodeHeight = 150;
@@ -69,7 +69,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [workflow, setWorkflow] = useState<Workflow | null>(null);
-    const [components, setComponents] = useState<Component[]>([]);
+    const [activities, setActivities] = useState<ComponentActivity[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -102,8 +102,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                                 <Box className="w-4 h-4 text-blue-500" />
                             </div>
                             <div className="text-[10px] text-gray-500 mb-2 line-clamp-2 leading-tight h-6">{step.description}</div>
-                            <div className="text-[9px] bg-blue-50 text-blue-600 p-1.5 rounded-lg font-mono truncate border border-blue-100/50" title={step.component_id}>
-                                ID: {step.component_id.split('-')[0]}...
+                            <div className="text-[9px] bg-blue-50 text-blue-600 p-1.5 rounded-lg font-mono truncate border border-blue-100/50" title={step.activity_id || step.component_id}>
+                                ID: {(step.activity_id || step.component_id)?.split('-')[0]}...
                             </div>
                         </div>
                     )
@@ -138,23 +138,23 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         }
     }, [workflowId, setNodes, setEdges]);
 
-    const fetchComponents = useCallback(async () => {
+    const fetchActivities = useCallback(async () => {
         try {
-            const response = await axios.get('http://localhost:8081/components');
-            setComponents(response.data);
+            const response = await axios.get('http://localhost:8081/activities');
+            setActivities(response.data);
         } catch (error) {
-            console.error("Failed to fetch components", error);
+            console.error("Failed to fetch activities", error);
         }
     }, []);
 
     useEffect(() => {
         const init = async () => {
             setLoading(true);
-            await Promise.all([fetchWorkflow(), fetchComponents()]);
+            await Promise.all([fetchWorkflow(), fetchActivities()]);
             setLoading(false);
         };
         if (workflowId) init();
-    }, [workflowId, fetchWorkflow, fetchComponents]);
+    }, [workflowId, fetchWorkflow, fetchActivities]);
 
     // DAG Validation
     const validateDAG = useCallback((currentNodes: Node[], currentEdges: Edge[]) => {
@@ -217,8 +217,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         [setEdges]
     );
 
-    const onDragStart = (event: React.DragEvent, component: Component) => {
-        event.dataTransfer.setData('application/reactflow', JSON.stringify(component));
+    const onDragStart = (event: React.DragEvent, activity: ComponentActivity) => {
+        event.dataTransfer.setData('application/reactflow', JSON.stringify(activity));
         event.dataTransfer.effectAllowed = 'move';
     };
 
@@ -237,14 +237,14 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
             const rawData = event.dataTransfer.getData('application/reactflow');
             if (!rawData) return;
 
-            const componentData = JSON.parse(rawData) as Component;
+            const activityData = JSON.parse(rawData) as ComponentActivity;
 
             const position = reactFlowInstance.project({
                 x: event.clientX - reactFlowBounds.left,
                 y: event.clientY - reactFlowBounds.top,
             });
 
-            const step_id = `${componentData.name.toLowerCase().replace(/\s+/g, '_')}_${Date.now().toString().slice(-4)}`;
+            const step_id = `${activityData.activity_name?.toLowerCase().replace(/\s+/g, '_') || (activityData as any).id}_${Date.now().toString().slice(-4)}`;
 
             const newNode: Node = {
                 id: step_id,
@@ -257,13 +257,13 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                                 <div className="font-bold text-blue-700 truncate max-w-[140px]" title={step_id}>{step_id}</div>
                                 <Box className="w-4 h-4 text-blue-500" />
                             </div>
-                            <div className="text-[10px] text-gray-500 mb-2 line-clamp-2 leading-tight h-6">{componentData.description}</div>
-                            <div className="text-[9px] bg-blue-50 text-blue-600 p-1.5 rounded-lg font-mono truncate border border-blue-100/50" title={componentData.id}>
-                                ID: {componentData.id.split('-')[0]}...
+                            <div className="text-[10px] text-gray-500 mb-2 line-clamp-2 leading-tight h-6">{activityData.description}</div>
+                            <div className="text-[9px] bg-blue-50 text-blue-600 p-1.5 rounded-lg font-mono truncate border border-blue-100/50" title={(activityData as any).id}>
+                                ID: {((activityData as any).id || "").split('-')[0]}...
                             </div>
                         </div>
                     ),
-                    originalComponent: componentData
+                    originalActivity: activityData
                 },
             };
 
@@ -273,8 +273,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                 if (!prev) return null;
                 const newStep: WorkflowStep = {
                     step_id,
-                    component_id: componentData.id,
-                    description: componentData.description || '',
+                    activity_id: (activityData as any).id,
+                    description: activityData.description || '',
                     inputs: { path_params: {}, query_params: {}, request_body: {} },
                     outputs: [],
                     next: []
@@ -363,8 +363,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                 } else {
                     return {
                         step_id: node.id,
-                        component_id: node.data.originalComponent?.id || '',
-                        description: node.data.originalComponent?.description || '',
+                        activity_id: node.data.originalActivity?.id || '',
+                        description: node.data.originalActivity?.description || '',
                         inputs: { path_params: {}, query_params: {}, request_body: {} },
                         outputs: [],
                         next: nextSteps
@@ -387,10 +387,10 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         }
     };
 
-    const filteredComponents = components.filter(c =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredActivities = activities.filter(a =>
+        a.activity_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (a as any).id?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (loading) {
@@ -526,7 +526,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                         <div className="p-6 border-b border-blue-50 flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                                 <Puzzle className="w-5 h-5 text-blue-500" />
-                                <h3 className="font-bold text-gray-800">Components</h3>
+                                <h3 className="font-bold text-gray-800">Activities</h3>
                             </div>
                             <button onClick={() => setIsLibOpen(false)} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors group">
                                 <X size={18} className="group-active:scale-90" />
@@ -538,7 +538,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={16} />
                                 <input
                                     type="text"
-                                    placeholder="Search API components..."
+                                    placeholder="Search API activities..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
@@ -547,17 +547,17 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                            {filteredComponents.length > 0 ? (
-                                filteredComponents.map((comp) => (
+                            {filteredActivities.length > 0 ? (
+                                filteredActivities.map((act) => (
                                     <div
-                                        key={comp.id}
+                                        key={(act as any).id}
                                         draggable
-                                        onDragStart={(e) => onDragStart(e, comp)}
+                                        onDragStart={(e) => onDragStart(e, act)}
                                         className="p-4 border border-blue-50 rounded-2xl bg-white hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-move group relative active:scale-[0.98]"
                                     >
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-[10px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded-md">
-                                                {comp.type}
+                                                ACTIVITY
                                             </span>
                                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
@@ -565,8 +565,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <h4 className="font-bold text-sm text-gray-800 group-hover:text-blue-600 transition-colors mb-1 truncate">{comp.name}</h4>
-                                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed h-8">{comp.description}</p>
+                                        <h4 className="font-bold text-sm text-gray-800 group-hover:text-blue-600 transition-colors mb-1 truncate">{act.activity_name || (act as any).id}</h4>
+                                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed h-8">{act.description}</p>
                                     </div>
                                 ))
                             ) : (
@@ -574,7 +574,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                         <Search size={24} className="text-gray-300" />
                                     </div>
-                                    <p className="text-sm font-bold text-gray-500">No components found</p>
+                                    <p className="text-sm font-bold text-gray-500">No activities found</p>
                                     <p className="text-xs text-gray-400">Try a different search term</p>
                                 </div>
                             )}
@@ -588,7 +588,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                         className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-24 bg-white border border-blue-100 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-blue-500 hover:bg-blue-50 transition-all hover:w-12 z-10 group"
                     >
                         <ChevronLeft size={18} className="mb-2 transition-transform group-hover:-translate-x-1" />
-                        <span className="[writing-mode:vertical-lr] font-black text-[10px] uppercase tracking-[0.2em]">Components</span>
+                        <span className="[writing-mode:vertical-lr] font-black text-[10px] uppercase tracking-[0.2em]">Activities</span>
                     </button>
                 )}
             </div>

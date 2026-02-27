@@ -1,12 +1,12 @@
 import React from 'react';
-import { Component } from '@/lib/type';
+import { ComponentActivity } from '@/lib/type';
 
-interface ComponentCardProps {
-    component: Component;
+interface ActivityCardProps {
+    component: ComponentActivity;
     onClick: () => void;
 }
 
-export default function ComponentCard({ component, onClick }: ComponentCardProps) {
+export default function ActivityCard({ component, onClick }: ActivityCardProps) {
     return (
         <div
             onClick={onClick}
@@ -18,16 +18,13 @@ export default function ComponentCard({ component, onClick }: ComponentCardProps
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                     </svg>
                 </div>
-                <span className={`px-2 py-1 text-[10px] uppercase font-bold rounded-md ${component.is_active
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-gray-50 text-gray-500'
-                    }`}>
-                    {component.is_active ? 'Active' : 'Inactive'}
+                <span className={`px-2 py-1 text-[10px] uppercase font-bold rounded-md bg-emerald-50 text-emerald-600`}>
+                    Active
                 </span>
             </div>
 
             <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors truncate">
-                {component.name}
+                {(component as any).id || component.activity_name}
             </h3>
 
             <p className="text-gray-500 text-sm line-clamp-2 mb-4 h-10">
@@ -37,10 +34,10 @@ export default function ComponentCard({ component, onClick }: ComponentCardProps
             <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                 <div className="flex items-center space-x-1.5">
                     <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                        {component.activities?.length || 0}
+                        {Object.keys((component as any).inputs || {}).length}
                     </span>
                     <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                        Activities
+                        Inputs
                     </span>
                 </div>
                 <div className="flex items-center text-primary-600 text-xs font-bold group-hover:translate-x-1 transition-transform">

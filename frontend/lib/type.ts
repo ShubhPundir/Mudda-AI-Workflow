@@ -12,7 +12,8 @@ const apiClient = axios.create({
 // Types
 export interface WorkflowStep {
   step_id: string;
-  component_id: string;
+  activity_id?: string;
+  component_id?: string;
   description: string;
   inputs: Record<string, any>;
   outputs: string[];

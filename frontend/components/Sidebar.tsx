@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, LayoutDashboard, GitBranch, Puzzle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, GitBranch, Activity } from 'lucide-react';
 
 interface NavItem {
   name: string;
@@ -34,9 +34,9 @@ export default function Sidebar() {
       icon: <GitBranch className="w-6 h-6" />,
     },
     {
-      name: 'Components',
-      href: '/components',
-      icon: <Puzzle className="w-6 h-6" />,
+      name: 'Activities',
+      href: '/activities',
+      icon: <Activity className="w-6 h-6" />,
     },
   ];
 
