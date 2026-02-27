@@ -72,3 +72,16 @@ async def contact_contractor(input: Dict[str, Any]) -> Dict[str, Any]:
         "result": result,
         "status": "completed",
     }
+
+@activity.defn
+async def await_plumber_confirmation_activity(input: Dict[str, Any]) -> Dict[str, Any]:
+    """Logs that a follow-up is expected from the plumber."""
+    logger.info("await_plumber_confirmation_activity: follow-up expected")
+
+    # TODO: Implement actual waiting mechanism (e.g., polling, signal) in Backend
+
+    # Simulation: Log to DB or system that we are waiting for a signal
+    return {
+        "status": "waiting_for_signal",
+        "message": "System is now expecting a follow-up signal from plumber"
+    }
