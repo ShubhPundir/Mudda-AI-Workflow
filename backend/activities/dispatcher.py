@@ -18,7 +18,8 @@ from activities import (
     contact_plumber,
     await_plumber_confirmation_activity,
     pdf_service_activity,
-    update_issue,
+    update_issue_activity,
+    fetch_issue_details_activity,
     llm_generate_dispatch_text_activity,
     generate_llm_content,
     human_feedback_activity,
@@ -45,7 +46,10 @@ ACTIVITY_METADATA: Dict[str, Dict[str, str]] = {
         "description": "Generates a PDF report using AI content and local templates, then uploads to S3."
     },
     "update_issue": {
-        "description": "Synchronizes the current workflow state with the main database issue record."
+        "description": "Synchronizes the current workflow state with the main database issue record (Internal Component)."
+    },
+    "fetch_issue_details": {
+        "description": "Fetches external issue details from the API."
     },
     "llm_generate_dispatch_text_activity": {
         "description": "Uses LLM to generate highly contextualized dispatch instructions."
@@ -66,7 +70,8 @@ COMPONENT_REGISTRY: Dict[str, Any] = {
     "contact_plumber": contact_plumber,
     "await_plumber_confirmation_activity": await_plumber_confirmation_activity,
     "pdf_service_activity": pdf_service_activity,
-    "update_issue": update_issue,
+    "update_issue": update_issue_activity,
+    "fetch_issue_details": fetch_issue_details_activity,
     "llm_generate_dispatch_text_activity": llm_generate_dispatch_text_activity,
     "generate_llm_content": generate_llm_content,
     "human_feedback_activity": human_feedback_activity,

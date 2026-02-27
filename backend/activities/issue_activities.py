@@ -7,12 +7,13 @@ Uses async DB sessions safely.
 import logging
 from typing import Any, Dict
 from temporalio import activity
+from services.issue_service import fetch_issue_details, update_issue
 
 logger = logging.getLogger(__name__)
 
 
 @activity.defn
-async def update_issue(input: Dict[str, Any]) -> Dict[str, Any]:
+async def update_issue_activity(input: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update a civic issue record in the database.
 
@@ -30,65 +31,73 @@ async def update_issue(input: Dict[str, Any]) -> Dict[str, Any]:
     """
     step_id = input.get("step_id", "unknown")
     issue_id = input.get("issue_id")
-    new_status = input.get("status")
 
     logger.info(
-        "update_issue activity — step_id=%s issue_id=%s status=%s",
+        "update_issue_activity — step_id=%s issue_id=%s",
         step_id,
         issue_id,
-        new_status,
     )
 
     if not issue_id:
         raise ValueError("issue_id is required for update_issue activity")
 
-    # ------------------------------------------------------------------
-    # NOTE: There is currently no Issue model in the codebase.
-    # When an Issue model is added, replace the placeholder below with
-    # an actual DB update. The pattern mirrors execution_tracking_activities.
-    # ------------------------------------------------------------------
-
-    from sessions.database import AsyncSessionLocal
-
-    async with AsyncSessionLocal() as db:
-        try:
-            # Placeholder: log the update until an Issue model exists
-            logger.info(
-                "Issue update recorded — issue_id=%s status=%s notes=%s",
-                issue_id,
-                new_status,
-                input.get("resolution_notes", ""),
-            )
-
-            # TODO: Uncomment when Issue model is available:
-            # from sqlalchemy import update as sa_update
-            # from models import Issue
-            # stmt = (
-            #     sa_update(Issue)
-            #     .where(Issue.id == issue_id)
-            #     .values(
-            #         status=new_status,
-            #         resolution_notes=input.get("resolution_notes"),
-            #     )
-            # )
-            # await db.execute(stmt)
-            # await db.commit()
-
-            await db.commit()
-        except Exception as exc:
-            await db.rollback()
-            logger.error("Failed to update issue: %s", exc, exc_info=True)
-            raise
-
-    return {
-        "step_id": step_id,
-        "issue_id": issue_id,
-        "status": "completed",
-        "updated_fields": {
+    try:
+        # Prepare fields to update
+        update_fields = {
             k: v
             for k, v in input.items()
             if k not in ("step_id", "issue_id") and v is not None
-        },
-    }
+        }
+
+        # Call service to perform update
+        result = await update_issue(issue_id, update_fields)
+        
+        return {
+            "step_id": step_id,
+            "issue_id": issue_id,
+            "status": "completed",
+            "service_result": result,
+            "updated_fields": update_fields
+        }
+    except Exception as exc:
+        logger.error("Failed to update issue: %s", exc, exc_info=True)
+        raise
 
 
+
+@activity.defn
+async def fetch_issue_details_activity(input: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Fetch details for a specific issue from the API.
+
+    Args:
+        input: Dict containing:
+            - issue_id (str): ID of the issue to fetch.
+            - step_id (str, optional): Originating workflow step ID.
+
+    Returns:
+        Structured JSON with issue details.
+    """
+    step_id = input.get("step_id", "unknown")
+    issue_id = input.get("issue_id")
+
+    logger.info(
+        "fetch_issue_details_activity — step_id=%s issue_id=%s",
+        step_id,
+        issue_id,
+    )
+
+    if not issue_id:
+        raise ValueError("issue_id is required for fetch_issue_details activity")
+
+    try:
+        details = await fetch_issue_details(issue_id)
+        return {
+            "step_id": step_id,
+            "issue_id": issue_id,
+            "status": "completed",
+            "details": details
+        }
+    except Exception as exc:
+        logger.error("Failed to fetch issue details: %s", exc, exc_info=True)
+        raise
