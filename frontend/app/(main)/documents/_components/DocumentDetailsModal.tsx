@@ -19,6 +19,10 @@ export default function DocumentDetailsModal({
 }: DocumentDetailsModalProps) {
   if (!document) return null;
 
+  const handleDelete = () => {
+    onDelete(document.id);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
@@ -101,7 +105,7 @@ export default function DocumentDetailsModal({
           {/* Actions */}
           <div className="flex justify-between items-center pt-4 border-t border-gray-200">
             <button
-              onClick={() => onDelete(document.id)}
+              onClick={handleDelete}
               className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <Trash2 className="w-4 h-4" />

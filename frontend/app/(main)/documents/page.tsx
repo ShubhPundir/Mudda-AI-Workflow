@@ -4,19 +4,23 @@ import { useState, useEffect } from 'react';
 import DocumentsHeader from './_components/DocumentsHeader';
 import CreateDocumentModal from './_components/CreateDocumentModal';
 import DocumentDetailsModal from './_components/DocumentDetailsModal';
-import LoadingState from '@/components/LoadingState';
+import DeleteConfirmModal from './_components/DeleteConfirmModal';
 import ErrorAlert from '@/components/ErrorAlert';
 import DataLayout from '@/components/DataLayout';
 import { DocumentCard } from './_components/DocumentCard';
 import { Document } from '@/lib/type';
+import { Trash2, Eye } from 'lucide-react';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -25,6 +29,7 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     fetchDocuments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const fetchDocuments = async () => {
@@ -80,11 +85,8 @@ export default function DocumentsPage() {
   };
 
   const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) {
-      return;
-    }
-
     try {
+      setIsDeleting(true);
       const response = await fetch(`/api/documents/${documentId}`, {
         method: 'DELETE',
       });
@@ -95,11 +97,23 @@ export default function DocumentsPage() {
       setDocuments(documents.filter(doc => doc.id !== documentId));
       setTotalDocuments(totalDocuments - 1);
       setIsDetailsModalOpen(false);
+      setIsDeleteModalOpen(false);
       setSelectedDocument(null);
+      setDocumentToDelete(null);
     } catch (err: any) {
       setError(err.message || 'Failed to delete document');
       console.error('Error deleting document:', err);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDeleteClick = (document: Document, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setDocumentToDelete(document);
+    setIsDeleteModalOpen(true);
   };
 
   return (
@@ -164,12 +178,39 @@ export default function DocumentsPage() {
               </span>
             ),
           },
+          {
+            key: 'actions',
+            header: 'Actions',
+            width: 'w-32',
+            render: (document: Document) => (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewDetails(document);
+                  }}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="View details"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => handleDeleteClick(document, e)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete document"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ),
+          },
         ]}
         renderGridItem={(document: Document) => (
           <DocumentCard
             key={document.id}
             document={document}
             onClick={() => handleViewDetails(document)}
+            onDelete={(e) => handleDeleteClick(document, e)}
           />
         )}
         onRowClick={handleViewDetails}
@@ -195,6 +236,17 @@ export default function DocumentsPage() {
         }}
         document={selectedDocument}
         onDelete={handleDeleteDocument}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDocumentToDelete(null);
+        }}
+        onConfirm={() => documentToDelete && handleDeleteDocument(documentToDelete.id)}
+        isDeleting={isDeleting}
+        documentTitle={documentToDelete?.heading || ''}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
@@ -69,23 +69,27 @@ const Modal: React.FC<ModalProps> = ({
         <div
           className={`inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle w-full border border-gray-200 ${sizeStyles[size]}`}
         >
-          <div className="bg-gradient-to-br from-white to-gray-50/50 px-6 pt-6 pb-4 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900" id="modal-title">
-                {title}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-100"
-              >
-                <span className="sr-only">Close</span>
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+          {title ? (
+            <div className="bg-gradient-to-br from-white to-gray-50/50 px-6 pt-6 pb-4 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900" id="modal-title">
+                  {title}
+                </h3>
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-100"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="mt-2">{children}</div>
             </div>
-            <div className="mt-2">{children}</div>
-          </div>
+          ) : (
+            children
+          )}
         </div>
       </div>
     </div>
