@@ -235,18 +235,21 @@ class DocumentService:
             document: Document model instance to synchronize
         """
         try:
-            # Format data according to RAG service schema
-            rag_payload = {
-                "document": {
-                    "text": document.text,
-                    "heading": document.heading,
-                    "author": document.author,
-                    "original_id": str(document.id),
-                    "status": document.status
-                },
-                "namespace": document.namespace
-            }
-            await self.rag_client.upsert_document(rag_payload)
+            from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+            
+            # Create RAG request using Pydantic schemas
+            rag_request = RAGUpsertRequest(
+                document=RAGDocumentData(
+                    text=document.text,
+                    heading=document.heading,
+                    author=document.author,
+                    original_id=str(document.id),
+                    status=document.status
+                ),
+                namespace=document.namespace
+            )
+            
+            await self.rag_client.upsert_document(rag_request)
             logger.info(f"Successfully synchronized document {document.id} to RAG service")
         except Exception as e:
             logger.error(f"Failed to sync document {document.id} to RAG service: {e}")

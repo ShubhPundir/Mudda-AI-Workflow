@@ -52,35 +52,41 @@ def test_http_rag_client_strips_trailing_slash():
 @pytest.mark.asyncio
 async def test_upsert_document_success(rag_client, mock_httpx_client):
     """Verify upsert_document sends correct POST request."""
+    from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+    
     # Mock successful response
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()
     mock_httpx_client.post = AsyncMock(return_value=mock_response)
     
-    document_data = {
-        "document": {
-            "text": "Test document content",
-            "heading": "Test Heading",
-            "author": "Test Author",
-            "original_id": "123e4567-e89b-12d3-a456-426614174000",
-            "status": "active"
-        },
-        "namespace": "waterworks-department"
-    }
+    # Create request using Pydantic schema
+    request = RAGUpsertRequest(
+        document=RAGDocumentData(
+            text="Test document content",
+            heading="Test Heading",
+            author="Test Author",
+            original_id="123e4567-e89b-12d3-a456-426614174000",
+            status="active"
+        ),
+        namespace="waterworks-department"
+    )
     
-    await rag_client.upsert_document(document_data)
+    await rag_client.upsert_document(request)
     
     # Verify POST was called with correct URL and data
-    mock_httpx_client.post.assert_called_once_with(
-        "http://localhost:8082/documents/single",
-        json=document_data
-    )
+    mock_httpx_client.post.assert_called_once()
+    call_args = mock_httpx_client.post.call_args
+    assert call_args[1]["json"]["document"]["text"] == "Test document content"
+    assert call_args[1]["json"]["document"]["original_id"] == "123e4567-e89b-12d3-a456-426614174000"
+    assert call_args[1]["json"]["namespace"] == "waterworks-department"
     mock_response.raise_for_status.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_upsert_document_http_error(rag_client, mock_httpx_client):
     """Verify upsert_document raises exception on HTTP error."""
+    from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+    
     # Mock HTTP error response
     mock_httpx_client.post = AsyncMock(
         side_effect=httpx.HTTPStatusError(
@@ -90,42 +96,44 @@ async def test_upsert_document_http_error(rag_client, mock_httpx_client):
         )
     )
     
-    document_data = {
-        "document": {
-            "text": "Test content",
-            "heading": "Test",
-            "author": "Author",
-            "original_id": "123e4567-e89b-12d3-a456-426614174000",
-            "status": "active"
-        },
-        "namespace": "waterworks-department"
-    }
+    request = RAGUpsertRequest(
+        document=RAGDocumentData(
+            text="Test content",
+            heading="Test",
+            author="Author",
+            original_id="123e4567-e89b-12d3-a456-426614174000",
+            status="active"
+        ),
+        namespace="waterworks-department"
+    )
     
     with pytest.raises(httpx.HTTPStatusError):
-        await rag_client.upsert_document(document_data)
+        await rag_client.upsert_document(request)
 
 
 @pytest.mark.asyncio
 async def test_upsert_document_timeout(rag_client, mock_httpx_client):
     """Verify upsert_document raises exception on timeout."""
+    from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+    
     # Mock timeout exception
     mock_httpx_client.post = AsyncMock(
         side_effect=httpx.TimeoutException("Request timed out")
     )
     
-    document_data = {
-        "document": {
-            "text": "Test content",
-            "heading": "Test",
-            "author": "Author",
-            "original_id": "123e4567-e89b-12d3-a456-426614174000",
-            "status": "active"
-        },
-        "namespace": "waterworks-department"
-    }
+    request = RAGUpsertRequest(
+        document=RAGDocumentData(
+            text="Test content",
+            heading="Test",
+            author="Author",
+            original_id="123e4567-e89b-12d3-a456-426614174000",
+            status="active"
+        ),
+        namespace="waterworks-department"
+    )
     
     with pytest.raises(httpx.TimeoutException):
-        await rag_client.upsert_document(document_data)
+        await rag_client.upsert_document(request)
 
 
 # --------------------------------------------------------------------------

@@ -20,6 +20,11 @@ from .document_schema import (
     DocumentResponse,
     DocumentListResponse
 )
+from .rag_schema import (
+    RAGDocumentData,
+    RAGUpsertRequest,
+    RAGDeleteRequest
+)
 
 __all__ = [
     "WorkflowStepSchema",
@@ -35,4 +40,7 @@ __all__ = [
     "DocumentCreate",
     "DocumentResponse",
     "DocumentListResponse",
+    "RAGDocumentData",
+    "RAGUpsertRequest",
+    "RAGDeleteRequest",
 ]

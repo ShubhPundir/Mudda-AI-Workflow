@@ -6,6 +6,7 @@ Concrete implementations can use HTTP REST or gRPC protocols.
 """
 from abc import ABC, abstractmethod
 from typing import Dict
+from schemas.rag_schema import RAGUpsertRequest
 
 
 class RAGClient(ABC):
@@ -18,7 +19,7 @@ class RAGClient(ABC):
     """
     
     @abstractmethod
-    async def upsert_document(self, document_data: Dict) -> None:
+    async def upsert_document(self, request: RAGUpsertRequest) -> None:
         """
         Upsert a document in the RAG service.
         
@@ -27,12 +28,7 @@ class RAGClient(ABC):
         document based on the document ID.
         
         Args:
-            document_data: Dictionary containing document fields:
-                - id (str): Document UUID as string
-                - text (str): Document text content
-                - heading (str): Document heading/title
-                - author (str): Document author name
-                - status (str): Document status
+            request: RAGUpsertRequest containing document data and namespace
         
         Raises:
             Exception: If the RAG service communication fails
@@ -83,25 +79,15 @@ class HTTPRAGClient(RAGClient):
         self.timeout = timeout
         self.client = httpx.AsyncClient(timeout=timeout)
     
-    async def upsert_document(self, document_data: Dict) -> None:
+    async def upsert_document(self, request: RAGUpsertRequest) -> None:
         """
         Upsert a document in the RAG service via HTTP POST.
         
         Sends a POST request to /documents/single with the document data.
-        The request body follows the schema:
-        {
-            "document": {
-                "text": "string",
-                "heading": "string",
-                "author": "string",
-                "original_id": "uuid",
-                "status": "active"
-            },
-            "namespace": "string"
-        }
+        The request body follows the schema defined in RAGUpsertRequest.
         
         Args:
-            document_data: Dictionary containing document fields and namespace
+            request: RAGUpsertRequest containing document data and namespace
         
         Raises:
             httpx.HTTPError: If the HTTP request fails
@@ -109,9 +95,11 @@ class HTTPRAGClient(RAGClient):
         """
         url = f"{self.base_url}/documents/single"
         try:
-            response = await self.client.post(url, json=document_data)
+            # Convert Pydantic model to dict for JSON serialization
+            payload = request.model_dump()
+            response = await self.client.post(url, json=payload)
             response.raise_for_status()
-            logger.debug(f"Successfully upserted document {document_data.get('document', {}).get('original_id')} to RAG service")
+            logger.debug(f"Successfully upserted document {request.document.original_id} to RAG service")
         except httpx.HTTPError as e:
             logger.error(f"HTTP error upserting document to RAG service: {e}")
             raise
@@ -196,15 +184,15 @@ class GRPCRAGClient(RAGClient):
         # TODO: self.stub = rag_service_pb2_grpc.RAGServiceStub(self.channel)
         logger.info(f"GRPCRAGClient initialized for address: {grpc_address} (placeholder)")
     
-    async def upsert_document(self, document_data: Dict) -> None:
+    async def upsert_document(self, request: RAGUpsertRequest) -> None:
         """
         Upsert a document in the RAG service via gRPC (placeholder).
         
         Args:
-            document_data: Dictionary containing document fields
+            request: RAGUpsertRequest containing document data and namespace
         
         TODO: Implement gRPC upsert call
-        - Convert document_data dict to protobuf UpsertDocumentRequest message
+        - Convert RAGUpsertRequest to protobuf UpsertDocumentRequest message
         - Call self.stub.UpsertDocument(request)
         - Handle gRPC exceptions (grpc.RpcError)
         - Map gRPC status codes to appropriate exceptions
@@ -212,16 +200,19 @@ class GRPCRAGClient(RAGClient):
         Raises:
             NotImplementedError: This is a placeholder implementation
         """
-        logger.warning(f"GRPCRAGClient.upsert_document called but not implemented (document_id: {document_data.get('id')})")
+        logger.warning(f"GRPCRAGClient.upsert_document called but not implemented (document_id: {request.document.original_id})")
         # TODO: Implement actual gRPC call
-        # request = rag_service_pb2.UpsertDocumentRequest(
-        #     id=document_data['id'],
-        #     text=document_data['text'],
-        #     heading=document_data['heading'],
-        #     author=document_data['author'],
-        #     status=document_data['status']
+        # grpc_request = rag_service_pb2.UpsertDocumentRequest(
+        #     document=rag_service_pb2.Document(
+        #         text=request.document.text,
+        #         heading=request.document.heading,
+        #         author=request.document.author,
+        #         original_id=request.document.original_id,
+        #         status=request.document.status
+        #     ),
+        #     namespace=request.namespace
         # )
-        # response = await self.stub.UpsertDocument(request)
+        # response = await self.stub.UpsertDocument(grpc_request)
         raise NotImplementedError("gRPC RAG client is not yet implemented")
     
     async def delete_document(self, document_id: str) -> None:
