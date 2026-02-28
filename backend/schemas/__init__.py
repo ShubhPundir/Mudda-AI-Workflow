@@ -14,6 +14,12 @@ from .ai_schemas import (
     WorkflowPlanResponse,
     WorkflowStep
 )
+from .document_schema import (
+    DocumentBase,
+    DocumentCreate,
+    DocumentResponse,
+    DocumentListResponse
+)
 
 __all__ = [
     "WorkflowStepSchema",
@@ -25,4 +31,8 @@ __all__ = [
     "ActivitySelectionResponse",
     "WorkflowPlanResponse",
     "WorkflowStep",
+    "DocumentBase",
+    "DocumentCreate",
+    "DocumentResponse",
+    "DocumentListResponse",
 ]
