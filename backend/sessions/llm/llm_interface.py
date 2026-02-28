@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Type
+from pydantic import BaseModel
 
 class LLMInterface(ABC):
     """
@@ -29,5 +30,26 @@ class LLMInterface(ABC):
             
         Returns:
             Provider-specific response object
+        """
+        pass
+
+    @abstractmethod
+    async def generate_structured(
+        self, 
+        content: str, 
+        response_schema: Type[BaseModel]
+    ) -> BaseModel:
+        """
+        Generate structured output from the LLM with schema validation.
+        
+        Args:
+            content: The prompt/content to send to the model
+            response_schema: Pydantic model class defining the expected response structure
+            
+        Returns:
+            Validated Pydantic model instance
+            
+        Raises:
+            ValueError: If the response doesn't match the schema
         """
         pass

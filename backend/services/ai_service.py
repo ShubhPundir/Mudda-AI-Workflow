@@ -1,14 +1,20 @@
 """
 AI Service for workflow generation using Gemini AI and LangGraph orchestration
+Uses structured output with Pydantic validation - zero regex extraction
 """
 import json
-import re
 import asyncio
-from typing import Dict, Any, List, TypedDict, Annotated, Union
+from typing import Dict, Any, List, TypedDict
 from activities.registry import ACTIVITY_METADATA
 # LangGraph imports
 from langgraph.graph import StateGraph, END
 from sessions.llm.llm_factory import LLMFactory
+# Structured output schemas
+from schemas.ai_schemas import (
+    ActivitySelectionResponse,
+    WorkflowPlanResponse,
+    WorkflowStep
+)
 
 class GraphState(TypedDict):
     """State management for LangGraph"""
@@ -47,7 +53,7 @@ class AIService:
         self.app = workflow.compile()
 
     async def _activity_selector_node(self, state: GraphState) -> GraphState:
-        """Node for selecting relevant activities"""
+        """Node for selecting relevant activities using structured output"""
         problem_statement = state["problem_statement"]
         
         # Update progress
@@ -70,17 +76,23 @@ Select the activity IDs that are relevant for solving this problem.
 """
             
             prompt = f"{system_prompt}\n\n{selection_prompt}"
-            response = await self.llm.generate_async(prompt)
             
-            response_text = self._serialize_ai_response(response.text if hasattr(response, "text") else str(response))
-            selection_result = json.loads(response_text)
+            # Use structured output - no regex needed!
+            selection_result = await self.llm.generate_structured(
+                prompt, 
+                ActivitySelectionResponse
+            )
             
-            selected_ids = selection_result.get("selected_activity_ids", [])
+            selected_ids = selection_result.selected_activity_ids
             if not selected_ids:
                 raise ValueError("No activities were selected")
 
             # Get full details for selected activities
-            selected_activities = [ACTIVITY_METADATA[aid] for aid in selected_ids if aid in ACTIVITY_METADATA]
+            selected_activities = [
+                ACTIVITY_METADATA[aid] 
+                for aid in selected_ids 
+                if aid in ACTIVITY_METADATA
+            ]
 
             new_state["selected_activity_ids"] = selected_ids
             new_state["selected_activities"] = selected_activities
@@ -92,7 +104,7 @@ Select the activity IDs that are relevant for solving this problem.
             return new_state
 
     async def _plan_maker_node(self, state: GraphState) -> GraphState:
-        """Node for creating the workflow plan"""
+        """Node for creating the workflow plan using structured output"""
         if state.get("error"):
             return state
 
@@ -115,13 +127,19 @@ Generate a workflow plan to resolve this problem using the selected activities.
 """
             
             prompt = f"{system_prompt}\n\n{workflow_prompt}"
-            response = await self.llm.generate_async(prompt)
             
-            response_text = self._serialize_ai_response(response.text if hasattr(response, "text") else str(response))
-            workflow_json = json.loads(response_text)
+            # Use structured output - no regex needed!
+            workflow_plan = await self.llm.generate_structured(
+                prompt,
+                WorkflowPlanResponse
+            )
             
-            # Validate
-            self._validate_workflow(workflow_json, activities_dict)
+            # Additional validation: check activity IDs exist
+            activity_ids = {act["id"] for act in activities_dict}
+            workflow_plan.validate_activity_ids(activity_ids)
+            
+            # Convert to dict for state storage
+            workflow_json = workflow_plan.model_dump()
             
             new_state["workflow_json"] = workflow_json
             new_state["current_step"] = "workflow_generation_complete"
@@ -144,18 +162,16 @@ Workflows are composed of **Temporal activities only**. Each activity represents
 Given a problem statement, analyze the available activities and select ONLY the ones relevant for solving the issue.
 
 ### OUTPUT FORMAT
-Respond ONLY in **valid JSON** matching this schema:
-
-```json
+You MUST respond with a JSON object matching this exact structure:
 {
   "selected_activity_ids": ["activity-id-1", "activity-id-2"]
 }
-```
 
 ### RULES:
 1. Select only activities that are directly relevant to solving the problem
 2. Be selective - don't include unnecessary steps
-3. Return ONLY valid JSON
+3. You must select at least one activity
+4. Return ONLY the JSON object, no additional text or markdown
 """
 
     @staticmethod
@@ -172,9 +188,7 @@ Using the provided activities, **design an actionable end-to-end plan** to resol
 The plan must follow a **directed acyclic graph (DAG)** structure, where each step references one activity by `id`.
 
 ### OUTPUT FORMAT
-Respond ONLY in **valid JSON** matching this schema:
-
-```json
+You MUST respond with a JSON object matching this exact structure:
 {
   "workflow_name": "<short_name>",
   "description": "<workflow_description>",
@@ -189,57 +203,18 @@ Respond ONLY in **valid JSON** matching this schema:
     }
   ]
 }
-```
 
 ### RULES:
 1. Use only the provided activities - do not create fictional ones
-2. Every step MUST have an `activity_id`.
-3. Use template variables like {{input_name}} or {{step_id.output_key}} for dynamic inputs.
-4. Return ONLY valid JSON, no additional text.
-5. The workflow must be valid DAG — no cycles.
+2. Every step MUST have an `activity_id` that exists in the provided activities
+3. Use template variables like {{input_name}} or {{step_id.output_key}} for dynamic inputs
+4. Return ONLY the JSON object, no additional text or markdown
+5. The workflow must be a valid DAG — no cycles allowed
+6. All step_ids must be unique
+7. All referenced next step_ids must exist in the workflow
 """
 
-    @staticmethod
-    def _serialize_ai_response(response_text: str) -> str:
-        """Extract and serialize JSON from AI response"""
-        if not response_text:
-            raise ValueError("Empty response from AI model")
-        
-        response_text = response_text.strip()
-        
-        # Try to extract JSON from markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
-        if json_match:
-            return json_match.group(1)
-        
-        # Try to find JSON object in the text
-        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-        if json_match:
-            return json_match.group(0)
-        
-        return response_text
 
-    @staticmethod
-    def _validate_workflow(workflow: Dict[str, Any], activities: List[dict]) -> None:
-        """Validate the generated workflow structure"""
-        required_fields = ["workflow_name", "description", "steps"]
-        
-        for field in required_fields:
-            if field not in workflow:
-                raise ValueError(f"Missing required field: {field}")
-        
-        if not isinstance(workflow["steps"], list):
-            raise ValueError("Steps must be a list")
-        
-        activity_ids = {act["id"] for act in activities}
-        
-        for i, step in enumerate(workflow["steps"]):
-            if "step_id" not in step:
-                raise ValueError(f"Step {i} missing step_id")
-            if "activity_id" not in step:
-                raise ValueError(f"Step {i} missing activity_id")
-            if step["activity_id"] not in activity_ids:
-                raise ValueError(f"Step {i} references non-existent activity: {step['activity_id']}")
 
     async def generate_workflow_plan(self, problem_statement: str) -> Dict[str, Any]:
         """Generate a workflow plan using LangGraph"""

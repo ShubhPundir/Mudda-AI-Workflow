@@ -9,17 +9,20 @@ from .workflow_schema import (
     WorkflowExecutionRequest,
     WorkflowExecutionResponse
 )
+from .ai_schemas import (
+    ActivitySelectionResponse,
+    WorkflowPlanResponse,
+    WorkflowStep
+)
 
 __all__ = [
-    "ComponentSchema",
-    "ComponentCreateRequest", 
-    "ComponentResponse",
-    "ComponentForSelection",
-    "ComponentForAI",
     "WorkflowStepSchema",
     "WorkflowPlanSchema",
     "ProblemStatementRequest",
     "WorkflowGenerationResponse",
     "WorkflowExecutionRequest",
-    "WorkflowExecutionResponse"
+    "WorkflowExecutionResponse",
+    "ActivitySelectionResponse",
+    "WorkflowPlanResponse",
+    "WorkflowStep",
 ]
