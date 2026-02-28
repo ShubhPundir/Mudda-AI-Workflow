@@ -15,15 +15,12 @@ logger = logging.getLogger(__name__)
 @activity.defn
 async def update_issue_activity(input: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Update a civic issue record in the database.
+    Update a civic issue record's status in the database.
 
     Args:
         input: Dict containing:
             - issue_id (str): ID of the issue to update.
-            - status (str, optional): New issue status.
-            - resolution_notes (str, optional): Notes on resolution.
-            - assigned_to (str, optional): Assignee identifier.
-            - metadata (dict, optional): Additional metadata to merge.
+            - status (str): New issue status (required).
             - step_id (str, optional): Originating workflow step ID.
 
     Returns:
@@ -42,22 +39,20 @@ async def update_issue_activity(input: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("issue_id is required for update_issue activity")
 
     try:
-        # Prepare fields to update
-        update_fields = {
-            k: v
-            for k, v in input.items()
-            if k not in ("step_id", "issue_id") and v is not None
-        }
+        # Extract status from input
+        status = input.get("status")
+        
+        if not status:
+            raise ValueError("status is required for update_issue activity")
 
         # Call service to perform update
-        result = await update_issue(issue_id, update_fields)
+        result = await update_issue(issue_id, status)
         
         return {
             "step_id": step_id,
             "issue_id": issue_id,
             "status": "completed",
-            "service_result": result,
-            "updated_fields": update_fields
+            "service_result": result
         }
     except Exception as exc:
         logger.error("Failed to update issue: %s", exc, exc_info=True)
