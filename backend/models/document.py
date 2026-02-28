@@ -22,8 +22,6 @@ class Document(Base):
         updated_at: Last update timestamp
     """
     __tablename__ = "documents"
-    __table_args__ = {'schema': 'workflow'}
-    
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     text = Column(Text, nullable=False)
@@ -35,6 +33,7 @@ class Document(Base):
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     
     __table_args__ = (
-        Index('idx_documents_status', 'status'),
+        Index('idx_documents_namespace', 'namespace'),
         Index('idx_documents_created_at', 'created_at'),
+        {'schema': 'workflow'}
     )

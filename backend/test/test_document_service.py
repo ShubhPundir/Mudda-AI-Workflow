@@ -237,11 +237,12 @@ async def test_upsert_document_syncs_to_rag_service(
     # Assert
     mock_rag_client.upsert_document.assert_called_once()
     call_args = mock_rag_client.upsert_document.call_args[0][0]
-    assert call_args["id"] == str(doc_id)
-    assert call_args["text"] == "Test content"
-    assert call_args["heading"] == "Test Heading"
-    assert call_args["author"] == "Test Author"
-    assert call_args["status"] == "active"
+    assert call_args["document"]["original_id"] == str(doc_id)
+    assert call_args["document"]["text"] == "Test content"
+    assert call_args["document"]["heading"] == "Test Heading"
+    assert call_args["document"]["author"] == "Test Author"
+    assert call_args["document"]["status"] == "active"
+    assert call_args["namespace"] == "waterworks-department"
 
 
 @pytest.mark.asyncio

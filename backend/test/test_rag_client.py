@@ -58,18 +58,21 @@ async def test_upsert_document_success(rag_client, mock_httpx_client):
     mock_httpx_client.post = AsyncMock(return_value=mock_response)
     
     document_data = {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "text": "Test document content",
-        "heading": "Test Heading",
-        "author": "Test Author",
-        "status": "active"
+        "document": {
+            "text": "Test document content",
+            "heading": "Test Heading",
+            "author": "Test Author",
+            "original_id": "123e4567-e89b-12d3-a456-426614174000",
+            "status": "active"
+        },
+        "namespace": "waterworks-department"
     }
     
     await rag_client.upsert_document(document_data)
     
     # Verify POST was called with correct URL and data
     mock_httpx_client.post.assert_called_once_with(
-        "http://localhost:8082/documents/upsert",
+        "http://localhost:8082/documents/single",
         json=document_data
     )
     mock_response.raise_for_status.assert_called_once()
@@ -88,11 +91,14 @@ async def test_upsert_document_http_error(rag_client, mock_httpx_client):
     )
     
     document_data = {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "text": "Test content",
-        "heading": "Test",
-        "author": "Author",
-        "status": "active"
+        "document": {
+            "text": "Test content",
+            "heading": "Test",
+            "author": "Author",
+            "original_id": "123e4567-e89b-12d3-a456-426614174000",
+            "status": "active"
+        },
+        "namespace": "waterworks-department"
     }
     
     with pytest.raises(httpx.HTTPStatusError):
@@ -108,11 +114,14 @@ async def test_upsert_document_timeout(rag_client, mock_httpx_client):
     )
     
     document_data = {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "text": "Test content",
-        "heading": "Test",
-        "author": "Author",
-        "status": "active"
+        "document": {
+            "text": "Test content",
+            "heading": "Test",
+            "author": "Author",
+            "original_id": "123e4567-e89b-12d3-a456-426614174000",
+            "status": "active"
+        },
+        "namespace": "waterworks-department"
     }
     
     with pytest.raises(httpx.TimeoutException):

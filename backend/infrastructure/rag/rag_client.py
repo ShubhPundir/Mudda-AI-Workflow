@@ -87,20 +87,31 @@ class HTTPRAGClient(RAGClient):
         """
         Upsert a document in the RAG service via HTTP POST.
         
-        Sends a POST request to /documents/upsert with the document data.
+        Sends a POST request to /documents/single with the document data.
+        The request body follows the schema:
+        {
+            "document": {
+                "text": "string",
+                "heading": "string",
+                "author": "string",
+                "original_id": "uuid",
+                "status": "active"
+            },
+            "namespace": "string"
+        }
         
         Args:
-            document_data: Dictionary containing document fields
+            document_data: Dictionary containing document fields and namespace
         
         Raises:
             httpx.HTTPError: If the HTTP request fails
             httpx.TimeoutException: If the request times out
         """
-        url = f"{self.base_url}/documents/upsert"
+        url = f"{self.base_url}/documents/single"
         try:
             response = await self.client.post(url, json=document_data)
             response.raise_for_status()
-            logger.debug(f"Successfully upserted document {document_data.get('id')} to RAG service")
+            logger.debug(f"Successfully upserted document {document_data.get('document', {}).get('original_id')} to RAG service")
         except httpx.HTTPError as e:
             logger.error(f"HTTP error upserting document to RAG service: {e}")
             raise

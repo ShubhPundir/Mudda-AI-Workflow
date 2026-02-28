@@ -12,6 +12,7 @@ class DocumentBase(BaseModel):
     heading: str = Field(..., min_length=1, max_length=255, description="Document heading")
     author: str = Field(..., min_length=1, max_length=255, description="Document author")
     status: str = Field(default="active", max_length=50, description="Document status")
+    namespace: str = Field(default="waterworks-department", max_length=50, description="Document namespace")
 
 
 class DocumentCreate(DocumentBase):
