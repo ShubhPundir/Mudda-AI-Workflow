@@ -14,6 +14,7 @@ class GraphState(TypedDict):
     selected_activity_ids: List[str]
     selected_activities: List[Dict[str, Any]]
     workflow_json: Dict[str, Any]
+    validation_result: Dict[str, Any]  # Validation results from plan_validator_node
     error: str
     # Progress tracking for streaming
     current_step: str

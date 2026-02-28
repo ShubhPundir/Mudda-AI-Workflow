@@ -8,7 +8,8 @@ from langgraph.graph import StateGraph, END
 from .ai_nodes import (
     GraphState,
     activity_selector_node,
-    plan_maker_node
+    plan_maker_node,
+    plan_validator_node
 )
 
 
@@ -19,11 +20,13 @@ class AIService:
     This service orchestrates a multi-agent workflow:
     1. Activity Selector - Analyzes problem and selects relevant activities
     2. Plan Maker - Creates detailed workflow plan from selected activities
+    3. Plan Validator - Validates workflow for reliability and correctness
     
     Architecture:
     - Modular nodes in services/ai_nodes/
     - Structured output with Pydantic validation
     - Zero regex extraction
+    - Comprehensive plan validation
     """
 
     def __init__(self):
@@ -34,18 +37,20 @@ class AIService:
         Initialize the LangGraph state machine
         
         Graph structure:
-        START -> activity_selector -> plan_maker -> END
+        START -> activity_selector -> plan_maker -> plan_validator -> END
         """
         workflow = StateGraph(GraphState)
 
         # Define nodes (imported from modular files)
         workflow.add_node("activity_selector", activity_selector_node)
         workflow.add_node("plan_maker", plan_maker_node)
+        workflow.add_node("plan_validator", plan_validator_node)
 
         # Define edges
         workflow.set_entry_point("activity_selector")
         workflow.add_edge("activity_selector", "plan_maker")
-        workflow.add_edge("plan_maker", END)
+        workflow.add_edge("plan_maker", "plan_validator")
+        workflow.add_edge("plan_validator", END)
 
         self.app = workflow.compile()
 
@@ -56,6 +61,7 @@ class AIService:
             "selected_activity_ids": [],
             "selected_activities": [],
             "workflow_json": {},
+            "validation_result": {},
             "error": "",
             "current_step": "",
             "message": ""
@@ -75,6 +81,7 @@ class AIService:
             "selected_activity_ids": [],
             "selected_activities": [],
             "workflow_json": {},
+            "validation_result": {},
             "error": "",
             "current_step": "",
             "message": ""
@@ -97,7 +104,7 @@ class AIService:
                         
                     data = {
                         "message": state.get("message", ""),
-                        "agent": "activity_selector" if node_name == "activity_selector" else "plan_maker"
+                        "agent": self._get_agent_name(node_name)
                     }
                     
                     if event_type == "activity_selection_complete":
@@ -106,6 +113,9 @@ class AIService:
                             for a in state.get("selected_activities", [])
                         ]
                     elif event_type == "workflow_generation_complete":
+                        data["workflow"] = state.get("workflow_json")
+                    elif event_type == "plan_validation_complete":
+                        data["validation"] = state.get("validation_result")
                         data["workflow"] = state.get("workflow_json")
                         
                     yield {
@@ -117,6 +127,15 @@ class AIService:
                 "event": "error",
                 "data": {"message": str(e), "error": True}
             }
+    
+    def _get_agent_name(self, node_name: str) -> str:
+        """Map node name to agent name for streaming"""
+        mapping = {
+            "activity_selector": "activity_selector",
+            "plan_maker": "plan_maker",
+            "plan_validator": "plan_validator"
+        }
+        return mapping.get(node_name, node_name)
 
 
 # Global AI service instance
