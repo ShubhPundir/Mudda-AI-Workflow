@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, LayoutDashboard, GitBranch, Activity } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, GitBranch, Activity, FileText } from 'lucide-react';
 
 interface NavItem {
   name: string;
@@ -37,6 +37,11 @@ export default function Sidebar() {
       name: 'Activities',
       href: '/activities',
       icon: <Activity className="w-6 h-6" />,
+    },
+    {
+      name: 'Documents',
+      href: '/documents',
+      icon: <FileText className="w-6 h-6" />,
     },
   ];
 

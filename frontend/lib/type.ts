@@ -73,3 +73,27 @@ export interface ComponentCreateRequest {
   activities: ComponentActivity[];
   config?: Record<string, any>;
 }
+
+export interface Document {
+  id: string;
+  text: string;
+  heading: string;
+  author: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentCreateRequest {
+  text: string;
+  heading: string;
+  author: string;
+  id?: string;
+}
+
+export interface DocumentListResponse {
+  documents: Document[];
+  total: number;
+  page: number;
+  page_size: number;
+}

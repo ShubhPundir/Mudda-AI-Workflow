@@ -247,7 +247,7 @@ This implementation plan breaks down the document CRUD service into incremental 
     - Add fixture to create/drop test tables
     - Add fixture to clean database between tests
 
-- [-] 12. Final checkpoint - Run all tests and verify coverage
+- [x] 12. Final checkpoint - Run all tests and verify coverage
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
