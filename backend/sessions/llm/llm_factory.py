@@ -1,4 +1,4 @@
-import os
+from config import settings
 from .llm_interface import LLMInterface
 from .gemini_llm_adapter import GeminiLLMAdapter
 from .bedrock_llm_adapter import BedrockLLMAdapter
@@ -9,7 +9,7 @@ class LLMFactory:
     Factory for creating LLMInterface instances.
     Supports multiple LLM providers: Gemini, AWS Bedrock (Claude 3)
     
-    Provider selection via LLM_PROVIDER environment variable:
+    Provider selection via LLM_PROVIDER in config:
     - "gemini" (default) - Google Gemini
     - "bedrock" - AWS Bedrock with Claude 3 Sonnet
     """
@@ -21,11 +21,10 @@ class LLMFactory:
         Get LLM service instance (singleton)
         
         Returns:
-            LLMInterface implementation based on LLM_PROVIDER env var
+            LLMInterface implementation based on settings.LLM_PROVIDER
         """
         if cls._instance is None:
-            provider = os.getenv("LLM_PROVIDER", "gemini").lower()
-            # TODO: should be in config.py
+            provider = settings.LLM_PROVIDER.lower()
             
             if provider == "bedrock":
                 cls._instance = BedrockLLMAdapter()

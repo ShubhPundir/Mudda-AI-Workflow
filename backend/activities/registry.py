@@ -23,42 +23,35 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
     "await_plumber_confirmation_activity": {
         "id": "await_plumber_confirmation_activity",
         "name": "Await Plumber Confirmation",
-        "description": "Registers a wait state, expecting a manual signal from the plumber.",
+        "description": "Registers a wait state with LLM-generated follow-up instructions, expecting a manual signal from the plumber.",
         "inputs": ["booking_id"],
         "outputs": ["confirmation_status", "technician_notes"]
     },
     "pdf_service_activity": {
         "id": "pdf_service_activity",
         "name": "Generate PDF Report",
-        "description": "Generates a PDF report using AI content and local templates, then uploads to S3.",
+        "description": "Generates a PDF report using AI content and local templates, then uploads to S3 with intelligent executive summary for downstream activities.",
         "inputs": ["content", "template_id"],
-        "outputs": ["report_url"]
+        "outputs": ["report_url", "executive_summary", "key_findings"]
     },
     "update_issue_activity": {
         "id": "update_issue_activity",
         "name": "Update Issue Status",
-        "description": "Synchronizes the current workflow state with the main database issue record.",
+        "description": "Synchronizes the current workflow state with the main database issue record using LLM-enhanced status summaries and next-step recommendations.",
         "inputs": ["issue_id", "status", "notes"],
-        "outputs": ["success"]
-    },
-    "fetch_issue_details_activity": {
-        "id": "fetch_issue_details_activity",
-        "name": "Fetch Issue Details",
-        "description": "Fetches external issue details from the API.",
-        "inputs": ["issue_id"],
-        "outputs": ["issue_details"]
+        "outputs": ["success", "llm_summary", "next_step_recommendation"]
     },
     "human_feedback_activity": {
         "id": "human_feedback_activity",
         "name": "Request Human Feedback",
-        "description": "Pauses execution for a required approval/input from an official.",
+        "description": "Pauses execution for a required approval/input from an official with LLM-generated contextual prompts.",
         "inputs": ["message", "options"],
         "outputs": ["chosen_option", "comment"]
     },
     "human_verification_activity": {
         "id": "human_verification_activity",
         "name": "Human Work Verification",
-        "description": "Specific human-in-the-loop verification for completed external work.",
+        "description": "Specific human-in-the-loop verification for completed external work with LLM-assisted analysis and verification checklists.",
         "inputs": ["work_id", "results"],
         "outputs": ["is_verified", "verification_notes"]
     },
@@ -76,8 +69,6 @@ def _get_activity_registry() -> Dict[str, Callable]:
         pdf_service_activity,
         update_issue_activity,
         fetch_issue_details_activity,
-        llm_generate_dispatch_text_activity,
-        generate_llm_content,
         human_feedback_activity,
         human_verification_activity,
     )
@@ -89,8 +80,6 @@ def _get_activity_registry() -> Dict[str, Callable]:
         "pdf_service_activity": pdf_service_activity,
         "update_issue_activity": update_issue_activity,
         "fetch_issue_details_activity": fetch_issue_details_activity,
-        "llm_generate_dispatch_text_activity": llm_generate_dispatch_text_activity,
-        "generate_llm_content": generate_llm_content,
         "human_feedback_activity": human_feedback_activity,
         "human_verification_activity": human_verification_activity,
     }
