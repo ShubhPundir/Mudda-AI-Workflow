@@ -11,6 +11,7 @@ from infrastructure.rag.rag_client import RAGClient
 
 logger = logging.getLogger(__name__)
 
+# TODO: implement archive feature of document update status later
 
 class DocumentService:
     """
