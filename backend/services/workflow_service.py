@@ -173,7 +173,7 @@ class WorkflowService:
     @staticmethod
     async def execute_workflow(db: AsyncSession, workflow_id: str, execution_data: Optional[Dict[str, Any]] = None) -> WorkflowExecutionResponse:
         """
-        Execute a workflow plan
+        Execute a workflow plan via Temporal
         
         Args:
             db: Database session
@@ -181,15 +181,15 @@ class WorkflowService:
             execution_data: Optional execution parameters
             
         Returns:
-            Execution details
+            Execution details with Temporal workflow ID
         """
-        # Verify workflow exists
+        # Verify workflow exists and get the plan
         result = await db.execute(select(WorkflowPlan).filter(WorkflowPlan.id == workflow_id))
         workflow = result.scalars().first()
         if not workflow:
             raise ValueError("Workflow plan not found")
         
-        # Create execution record
+        # Create execution record first (to get UUID)
         execution = WorkflowExecution(
             workflow_plan_id=workflow_id,
             execution_data=execution_data,
@@ -200,8 +200,38 @@ class WorkflowService:
         await db.commit()
         await db.refresh(execution)
         
-        # TODO: Integrate with Temporal.io for actual execution
-        # For now, just return the execution record
+        # Get the workflow plan JSON
+        workflow_plan_json = workflow.plan_json
+        if not workflow_plan_json:
+            raise ValueError("Workflow plan has no steps defined")
+        
+        # Start Temporal workflow execution
+        from temporal.client import temporal_client_manager
+        
+        try:
+            # Connect to Temporal and start workflow
+            temporal_workflow_id = await temporal_client_manager.execute_workflow(
+                workflow_plan=workflow_plan_json,
+                execution_id=str(execution.id)  # Pass execution UUID
+            )
+            
+            # Update execution record with Temporal workflow ID
+            execution.temporal_workflow_id = temporal_workflow_id
+            execution.status = "running"
+            execution.started_at = datetime.utcnow()
+            
+            await db.commit()
+            await db.refresh(execution)
+            
+        except Exception as e:
+            # Mark execution as failed if Temporal start fails
+            execution.status = "failed"
+            execution.execution_data = {
+                "error": str(e),
+                "error_type": "temporal_start_failed"
+            }
+            await db.commit()
+            raise ValueError(f"Failed to start Temporal workflow: {str(e)}")
         
         return WorkflowExecutionResponse(
             execution_id=str(execution.id),

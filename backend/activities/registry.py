@@ -3,19 +3,7 @@ Activity Registry & Metadata
 Maps activity names (string) to the actual activity function and metadata.
 This is used by BOTH the Temporal Worker for registration and the AI Service for plan generation.
 """
-from typing import Any, Dict
-from activities import (
-    send_notification,
-    contact_plumber,
-    await_plumber_confirmation_activity,
-    pdf_service_activity,
-    update_issue_activity,
-    fetch_issue_details_activity,
-    llm_generate_dispatch_text_activity,
-    generate_llm_content,
-    human_feedback_activity,
-    human_verification_activity,
-)
+from typing import Any, Callable, Dict
 
 ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
     "send_notification": {
@@ -90,16 +78,75 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
     },
 }
 
+def _get_activity_registry() -> Dict[str, Callable]:
+    """
+    Lazy-load activity functions to avoid circular imports.
+    This function is called when the registry is actually needed.
+    """
+    from activities import (
+        send_notification,
+        contact_plumber,
+        await_plumber_confirmation_activity,
+        pdf_service_activity,
+        update_issue_activity,
+        fetch_issue_details_activity,
+        llm_generate_dispatch_text_activity,
+        generate_llm_content,
+        human_feedback_activity,
+        human_verification_activity,
+    )
+    
+    return {
+        "send_notification": send_notification,
+        "contact_plumber": contact_plumber,
+        "await_plumber_confirmation_activity": await_plumber_confirmation_activity,
+        "pdf_service_activity": pdf_service_activity,
+        "update_issue_activity": update_issue_activity,
+        "fetch_issue_details_activity": fetch_issue_details_activity,
+        "llm_generate_dispatch_text_activity": llm_generate_dispatch_text_activity,
+        "generate_llm_content": generate_llm_content,
+        "human_feedback_activity": human_feedback_activity,
+        "human_verification_activity": human_verification_activity,
+    }
+
+
+# Lazy-loaded registry - call _get_activity_registry() when needed
+_ACTIVITY_REGISTRY_CACHE: Dict[str, Callable] = {}
+
+
+def get_activity_registry() -> Dict[str, Callable]:
+    """Get the activity registry, loading it lazily on first access."""
+    global _ACTIVITY_REGISTRY_CACHE
+    if not _ACTIVITY_REGISTRY_CACHE:
+        _ACTIVITY_REGISTRY_CACHE = _get_activity_registry()
+    return _ACTIVITY_REGISTRY_CACHE
+
+
+# For backward compatibility - this will be loaded lazily
+class _ActivityRegistryProxy:
+    """Proxy object that loads the registry on first access."""
+    
+    def __getitem__(self, key: str) -> Callable:
+        return get_activity_registry()[key]
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        return get_activity_registry().get(key, default)
+    
+    def keys(self):
+        return get_activity_registry().keys()
+    
+    def values(self):
+        return get_activity_registry().values()
+    
+    def items(self):
+        return get_activity_registry().items()
+    
+    def __contains__(self, key: str) -> bool:
+        return key in get_activity_registry()
+    
+    def __iter__(self):
+        return iter(get_activity_registry())
+
+
 # Mapping ID to actual callable for Temporal registration or direct execution (if needed)
-ACTIVITY_REGISTRY: Dict[str, Any] = {
-    "send_notification": send_notification,
-    "contact_plumber": contact_plumber,
-    "await_plumber_confirmation_activity": await_plumber_confirmation_activity,
-    "pdf_service_activity": pdf_service_activity,
-    "update_issue_activity": update_issue_activity,
-    "fetch_issue_details_activity": fetch_issue_details_activity,
-    "llm_generate_dispatch_text_activity": llm_generate_dispatch_text_activity,
-    "generate_llm_content": generate_llm_content,
-    "human_feedback_activity": human_feedback_activity,
-    "human_verification_activity": human_verification_activity,
-}
+ACTIVITY_REGISTRY = _ActivityRegistryProxy()
