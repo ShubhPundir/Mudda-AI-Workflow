@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
+// TODO: make this ai_workflow_api_url
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
 
 const apiClient = axios.create({
