@@ -17,7 +17,8 @@ class Settings:
     DB_USER: str = os.getenv("DB_USER", "username")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "password")
 
-    # Gemini AI
+    # LLM Configuration
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")  # gemini, bedrock
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
     # Email Configuration
