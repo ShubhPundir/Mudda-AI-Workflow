@@ -51,50 +51,44 @@ async def fetch_issue_details(issue_id: str) -> Dict[str, Any]:
             logger.error(f"Error fetching issue {issue_id}: {e}")
             raise
 
-async def update_issue(issue_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
+async def update_issue(issue_id: str, status: str) -> Dict[str, Any]:
     """
-    Update a civic issue record in the database.
-    Satisfies both general updates and the specific "update issue status" requirement.
+    Update a civic issue record's status in the database.
     
     Args:
         issue_id: ID of the issue to update.
-        update_data: Dictionary containing fields to update (e.g., {"status": "IN_PROGRESS"}).
+        status: String representing the new status (e.g., "IN_PROGRESS").
         
     Returns:
         A dictionary confirming the update.
     """
-    logger.info(f"Updating issue {issue_id} with data: {update_data}")
+    logger.info(f"Updating issue {issue_id} status to: {status}")
     
-    mapped_updates = {}
-    for key, value in update_data.items():
-        if key == "status":
-            try:
-                # Handle both string and enum input
-                mapped_updates["status"] = IssueStatus(value.upper()) if isinstance(value, str) else value
-            except ValueError:
-                logger.error(f"Invalid status: {value}")
-                raise ValueError(f"Invalid status: {value}")
-        elif hasattr(Issue, key):
-            mapped_updates[key] = value
-
-    if not mapped_updates:
-        logger.warning(f"No valid fields to update for issue {issue_id}")
-        return {"issue_id": issue_id, "status": "no_change"}
+    try:
+        status_enum = IssueStatus(status.upper())
+    except ValueError:
+        logger.error(f"Invalid status: {status}")
+        raise ValueError(f"Invalid status: {status}, must be one of {IssueStatus}")
 
     async with AsyncSessionLocal() as db:
         try:
             stmt = (
                 sa_update(Issue)
                 .where(Issue.id == int(issue_id))
-                .values(**mapped_updates)
+                .values(status=status_enum)
             )
-            await db.execute(stmt)
+
+            result = await db.execute(stmt)
+            if result.rowcount == 0:
+                logger.error(f"Issue with ID {issue_id} not found")
+                await db.rollback()
+                raise ValueError(f"Issue {issue_id} not found")
             await db.commit()
             
             return {
                 "issue_id": issue_id,
-                "status": "updated",
-                "updated_fields": list(mapped_updates.keys())
+                "status": status_enum.value,
+                "updated_fields": ["status"]
             }
         except Exception as exc:
             await db.rollback()

@@ -33,7 +33,7 @@ class Settings:
     # AWS SES
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
-    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    AWS_REGION: str = os.getenv("AWS_REGION", "ap-south-1")
 
     # S3 Configuration
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "mudda-documents")
@@ -49,11 +49,17 @@ class Settings:
     TEMPORAL_NAMESPACE: str = os.getenv("TEMPORAL_NAMESPACE", "default")
 
     # API
-    API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
+    API_HOST: str = os.getenv("API_HOST", "127.0.0.1")
     API_PORT: int = int(os.getenv("API_PORT", "8081"))
 
     # CORS
     CORS_ORIGINS: list = ["*"]
+
+    # RAG Service
+    RAG_SERVICE_URL: str = os.getenv("RAG_SERVICE_URL", "http://localhost:8082")
+    RAG_PROTOCOL: str = os.getenv("RAG_PROTOCOL", "http")  # "http" or "grpc"
+    RAG_GRPC_ADDRESS: str = os.getenv("RAG_GRPC_ADDRESS", "localhost:8082")
+    RAG_NAMESPACE: str = os.getenv("RAG_NAMESPACE", "waterworks-department")  # Default namespace for policy retrieval
 
     # Application
     APP_NAME: str = "Mudda AI Workflow System"

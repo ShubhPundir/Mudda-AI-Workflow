@@ -7,7 +7,14 @@ interface LoadingDotsProps {
 }
 
 export function LoadingDots({ color }: LoadingDotsProps) {
-    const colorClass = color === 'blue' ? 'bg-blue-400' : 'bg-purple-400';
+    const colorMap: Record<string, string> = {
+        cyan: 'bg-cyan-400',
+        blue: 'bg-blue-400',
+        purple: 'bg-purple-400',
+        green: 'bg-green-400',
+    };
+    
+    const colorClass = colorMap[color] || 'bg-blue-400';
 
     return (
         <div className="flex space-x-1">

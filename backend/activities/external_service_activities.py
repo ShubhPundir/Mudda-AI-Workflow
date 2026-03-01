@@ -6,9 +6,14 @@ services.
 Uses PlumberAPIAdapter from the infrastructure layer.
 """
 import logging
-from typing import Any, Dict
 from temporalio import activity
 from infrastructure.plumber.plumber_factory import PlumberFactory
+from schemas.activity_schemas import (
+    ContactPlumberInput,
+    ContactPlumberOutput,
+    AwaitPlumberConfirmationInput,
+    AwaitPlumberConfirmationOutput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,43 +22,37 @@ _plumber_service = PlumberFactory.get_plumber_service()
 
 
 @activity.defn
-async def contact_plumber(input: Dict[str, Any]) -> Dict[str, Any]:
+async def contact_plumber(input: ContactPlumberInput) -> ContactPlumberOutput:
     """
     Contact the plumber external service.
 
     Args:
-        input: Dict containing issue details, location, urgency, etc.
-            - step_id (str, optional): Originating workflow step ID.
-            - issue_id (str, optional): Related civic issue ID.
-            - location (str, optional): Service location.
-            - description (str, optional): Problem description.
-            - urgency (str, optional): 'low', 'medium', 'high', 'critical'.
+        input: ContactPlumberInput containing issue details, location, urgency, etc.
 
     Returns:
-        Structured JSON with service response.
+        ContactPlumberOutput with service response.
     """
-    step_id = input.get("step_id", "unknown")
-    logger.info("contact_plumber activity — step_id=%s", step_id)
+    logger.info("contact_plumber activity — step_id=%s", input.step_id)
 
-    result = await _plumber_service.contact(input)
+    result = await _plumber_service.contact(input.model_dump())
 
-    return {
-        "step_id": step_id,
-        "service": "plumber",
-        "result": result,
-        "status": "completed",
-    }
+    return ContactPlumberOutput(
+        step_id=input.step_id,
+        service="plumber",
+        result=result,
+        status="completed",
+    )
 
 
 @activity.defn
-async def await_plumber_confirmation_activity(input: Dict[str, Any]) -> Dict[str, Any]:
+async def await_plumber_confirmation_activity(input: AwaitPlumberConfirmationInput) -> AwaitPlumberConfirmationOutput:
     """Logs that a follow-up is expected from the plumber."""
     logger.info("await_plumber_confirmation_activity: follow-up expected")
 
     # TODO: Implement actual waiting mechanism (e.g., polling, signal) in Backend
 
     # Simulation: Log to DB or system that we are waiting for a signal
-    return {
-        "status": "waiting_for_signal",
-        "message": "System is now expecting a follow-up signal from plumber"
-    }
+    return AwaitPlumberConfirmationOutput(
+        status="waiting_for_signal",
+        message="System is now expecting a follow-up signal from plumber"
+    )

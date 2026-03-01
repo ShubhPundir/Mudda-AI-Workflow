@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { LoaderState, AGENTS } from './types';
 import { AgentCard } from './AgentCard';
 import { ProgressTimeline } from './ProgressTimeline';
+import { PolicyGrid } from './PolicyGrid';
 import { ComponentGrid } from './ComponentGrid';
 import { ErrorDisplay } from './ErrorDisplay';
 import { loaderStyles } from './styles';
@@ -15,9 +16,12 @@ interface WorkflowGenerationLoaderProps {
 const INITIAL_STATE: LoaderState = {
     agent1Status: 'idle',
     agent2Status: 'idle',
+    agent3Status: 'idle',
+    agent4Status: 'idle',
+    retrievedPolicies: [],
     selectedComponents: [],
     currentMessage: 'Initializing AI agents...',
-    stage: 'component_selection',
+    stage: 'policy_retrieval',
 };
 
 export default function WorkflowGenerationLoader({ isActive }: WorkflowGenerationLoaderProps) {
@@ -28,7 +32,7 @@ export default function WorkflowGenerationLoader({ isActive }: WorkflowGeneratio
             setState({
                 ...INITIAL_STATE,
                 agent1Status: 'active',
-                currentMessage: 'Agent 1: Analyzing problem and selecting components...',
+                currentMessage: 'Agent 1: Retrieving relevant policies from knowledge base...',
             });
         }
     }, [isActive]);
@@ -65,7 +69,12 @@ export default function WorkflowGenerationLoader({ isActive }: WorkflowGeneratio
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
                     <AgentCard agent={AGENTS[0]} status={state.agent1Status} state={state} />
                     <AgentCard agent={AGENTS[1]} status={state.agent2Status} state={state} />
+                    <AgentCard agent={AGENTS[2]} status={state.agent3Status} state={state} />
+                    <AgentCard agent={AGENTS[3]} status={state.agent4Status} state={state} />
                 </div>
+
+                {/* Retrieved Policies */}
+                <PolicyGrid policies={state.retrievedPolicies} />
 
                 {/* Selected Components */}
                 <ComponentGrid components={state.selectedComponents} />

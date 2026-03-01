@@ -17,6 +17,7 @@ class Issue(Base):
     Matches the schema defined in the Java entity.
     """
     __tablename__ = "issues"
+    __table_args__ = {'schema': 'public'}
 
     # PK with sequence
     id = Column(
