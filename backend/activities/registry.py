@@ -9,14 +9,14 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
     "send_notification": {
         "id": "send_notification",
         "name": "Send Notification",
-        "description": "Sends an email notification via the infrastructure layer.",
+        "description": "Sends an email notification via the infrastructure layer with LLM-enhanced content generation capabilities.",
         "inputs": ["recipient", "subject", "body"],
         "outputs": ["success"]
     },
     "contact_plumber": {
         "id": "contact_plumber",
         "name": "Contact Plumber",
-        "description": "Initiates an automated API call to the plumber dispatch system.",
+        "description": "Initiates an automated API call to the plumber dispatch system with LLM-enhanced dispatch instructions.",
         "inputs": ["issue_id", "dispatch_text"],
         "outputs": ["booking_id", "estimated_arrival"]
     },
@@ -47,20 +47,6 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
         "description": "Fetches external issue details from the API.",
         "inputs": ["issue_id"],
         "outputs": ["issue_details"]
-    },
-    "llm_generate_dispatch_text_activity": {
-        "id": "llm_generate_dispatch_text_activity",
-        "name": "Generate Dispatch Text",
-        "description": "Uses LLM to generate highly contextualized dispatch instructions.",
-        "inputs": ["issue_details"],
-        "outputs": ["dispatch_text"]
-    },
-    "generate_llm_content": {
-        "id": "generate_llm_content",
-        "name": "Generate LLM Content",
-        "description": "Generic AI content generation for reports and summaries.",
-        "inputs": ["prompt", "context"],
-        "outputs": ["content"]
     },
     "human_feedback_activity": {
         "id": "human_feedback_activity",

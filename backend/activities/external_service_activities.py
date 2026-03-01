@@ -8,6 +8,7 @@ Uses PlumberAPIAdapter from the infrastructure layer.
 import logging
 from temporalio import activity
 from infrastructure.plumber.plumber_factory import PlumberFactory
+from sessions.llm import LLMFactory
 from schemas.activity_schemas import (
     ContactPlumberInput,
     ContactPlumberOutput,
@@ -19,12 +20,15 @@ logger = logging.getLogger(__name__)
 
 # Module-level adapter instances
 _plumber_service = PlumberFactory.get_plumber_service()
+_llm_service = LLMFactory.get_llm_service()
 
 
 @activity.defn
 async def contact_plumber(input: ContactPlumberInput) -> ContactPlumberOutput:
     """
-    Contact the plumber external service.
+    Contact the plumber external service with LLM-enhanced dispatch instructions.
+
+    LLM service is available for generating contextualized dispatch text if needed.
 
     Args:
         input: ContactPlumberInput containing issue details, location, urgency, etc.
@@ -34,7 +38,18 @@ async def contact_plumber(input: ContactPlumberInput) -> ContactPlumberOutput:
     """
     logger.info("contact_plumber activity — step_id=%s", input.step_id)
 
-    result = await _plumber_service.contact(input.model_dump())
+    # Generate enhanced dispatch text using LLM if description is provided
+    enhanced_input = input.model_dump()
+    if input.description:
+        prompt = f"Generate dispatch instructions for a {input.urgency} urgency plumbing issue: {input.description}"
+        if input.location:
+            prompt += f" at location: {input.location}"
+        
+        logger.info("Generating LLM-enhanced dispatch text")
+        dispatch_text = await _llm_service.generate_report({"problem_statement": prompt})
+        enhanced_input["dispatch_text"] = dispatch_text
+
+    result = await _plumber_service.contact(enhanced_input)
 
     return ContactPlumberOutput(
         step_id=input.step_id,
