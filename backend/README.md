@@ -197,7 +197,7 @@ Generated workflows follow a DAG (Directed Acyclic Graph) structure:
 - `GEMINI_API_KEY`: Google Gemini AI API key
 - `TEMPORAL_HOST`: Temporal server host (default: localhost:7233)
 - `TEMPORAL_NAMESPACE`: Temporal namespace (default: default)
-- `API_HOST`: API server host (default: 0.0.0.0)
+- `API_HOST`: API server host (default: 127.0.0.1)
 - `API_PORT`: API server port (default: 8000)
 
 ## Development
