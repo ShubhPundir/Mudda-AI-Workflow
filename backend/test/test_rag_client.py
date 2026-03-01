@@ -192,6 +192,141 @@ async def test_delete_document_timeout(rag_client, mock_httpx_client):
 
 
 # --------------------------------------------------------------------------
+# Unit Tests - search_documents
+# --------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_search_documents_success(rag_client, mock_httpx_client):
+    """Verify search_documents sends correct POST request and parses response."""
+    from schemas.rag_schema import RAGSearchRequest
+    
+    # Mock successful response
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json = MagicMock(return_value={
+        "relevant_parts": [
+            {
+                "document_id": "a5796ae4-3ea0-46f1-a25b-2dfe1bd25427",
+                "text": "500 m3/day in Over-exploited areas",
+                "heading": "Haryana Water Resources Authority",
+                "author": "Shubh Pundir",
+                "chunk_index": 18.0,
+                "original_id": "a5796ae4-3ea0-46f1-a25b-2dfe1bd25427",
+                "is_chunk": True,
+                "similarity_score": 1.0,
+                "status": "active",
+                "source": "hybrid",
+                "semantic_score": 0.85,
+                "lexical_score": 0.75,
+                "combined_score": 0.80
+            }
+        ],
+        "total_results": 1
+    })
+    mock_httpx_client.post = AsyncMock(return_value=mock_response)
+    
+    # Create search request
+    request = RAGSearchRequest(
+        query="ground water withdrawal",
+        top_k=5,
+        similarity_threshold=0.6,
+        namespace="waterworks-department"
+    )
+    
+    result = await rag_client.search_documents(request)
+    
+    # Verify POST was called with correct URL and data
+    mock_httpx_client.post.assert_called_once()
+    call_args = mock_httpx_client.post.call_args
+    assert call_args[0][0] == "http://localhost:8082/rag"
+    assert call_args[1]["json"]["query"] == "ground water withdrawal"
+    assert call_args[1]["json"]["top_k"] == 5
+    assert call_args[1]["json"]["similarity_threshold"] == 0.6
+    assert call_args[1]["json"]["namespace"] == "waterworks-department"
+    mock_response.raise_for_status.assert_called_once()
+    
+    # Verify response parsing
+    assert result.total_results == 1
+    assert len(result.relevant_parts) == 1
+    assert result.relevant_parts[0].document_id == "a5796ae4-3ea0-46f1-a25b-2dfe1bd25427"
+    assert result.relevant_parts[0].text == "500 m3/day in Over-exploited areas"
+    assert result.relevant_parts[0].similarity_score == 1.0
+
+
+@pytest.mark.asyncio
+async def test_search_documents_empty_results(rag_client, mock_httpx_client):
+    """Verify search_documents handles empty results correctly."""
+    from schemas.rag_schema import RAGSearchRequest
+    
+    # Mock response with no results
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json = MagicMock(return_value={
+        "relevant_parts": [],
+        "total_results": 0
+    })
+    mock_httpx_client.post = AsyncMock(return_value=mock_response)
+    
+    request = RAGSearchRequest(
+        query="nonexistent query",
+        top_k=5,
+        similarity_threshold=0.6,
+        namespace="waterworks-department"
+    )
+    
+    result = await rag_client.search_documents(request)
+    
+    assert result.total_results == 0
+    assert len(result.relevant_parts) == 0
+
+
+@pytest.mark.asyncio
+async def test_search_documents_http_error(rag_client, mock_httpx_client):
+    """Verify search_documents raises exception on HTTP error."""
+    from schemas.rag_schema import RAGSearchRequest
+    
+    # Mock HTTP error response
+    mock_httpx_client.post = AsyncMock(
+        side_effect=httpx.HTTPStatusError(
+            "500 Internal Server Error",
+            request=MagicMock(),
+            response=MagicMock()
+        )
+    )
+    
+    request = RAGSearchRequest(
+        query="test query",
+        top_k=5,
+        similarity_threshold=0.6,
+        namespace="waterworks-department"
+    )
+    
+    with pytest.raises(httpx.HTTPStatusError):
+        await rag_client.search_documents(request)
+
+
+@pytest.mark.asyncio
+async def test_search_documents_timeout(rag_client, mock_httpx_client):
+    """Verify search_documents raises exception on timeout."""
+    from schemas.rag_schema import RAGSearchRequest
+    
+    # Mock timeout exception
+    mock_httpx_client.post = AsyncMock(
+        side_effect=httpx.TimeoutException("Request timed out")
+    )
+    
+    request = RAGSearchRequest(
+        query="test query",
+        top_k=5,
+        similarity_threshold=0.6,
+        namespace="waterworks-department"
+    )
+    
+    with pytest.raises(httpx.TimeoutException):
+        await rag_client.search_documents(request)
+
+
+# --------------------------------------------------------------------------
 # Unit Tests - close
 # --------------------------------------------------------------------------
 
@@ -212,21 +347,26 @@ async def test_close_client(rag_client, mock_httpx_client):
 @pytest.mark.asyncio
 async def test_upsert_document_unexpected_error(rag_client, mock_httpx_client):
     """Verify upsert_document handles unexpected exceptions."""
+    from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+    
     # Mock unexpected exception
     mock_httpx_client.post = AsyncMock(
         side_effect=Exception("Unexpected error")
     )
     
-    document_data = {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "text": "Test content",
-        "heading": "Test",
-        "author": "Author",
-        "status": "active"
-    }
+    request = RAGUpsertRequest(
+        document=RAGDocumentData(
+            text="Test content",
+            heading="Test",
+            author="Author",
+            original_id="123e4567-e89b-12d3-a456-426614174000",
+            status="active"
+        ),
+        namespace="waterworks-department"
+    )
     
     with pytest.raises(Exception) as exc_info:
-        await rag_client.upsert_document(document_data)
+        await rag_client.upsert_document(request)
     
     assert "Unexpected error" in str(exc_info.value)
 
@@ -264,18 +404,23 @@ def test_grpc_rag_client_initialization():
 @pytest.mark.asyncio
 async def test_grpc_upsert_document_not_implemented():
     """Verify GRPCRAGClient.upsert_document raises NotImplementedError."""
+    from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+    
     client = GRPCRAGClient(grpc_address="localhost:8082")
     
-    document_data = {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "text": "Test document content",
-        "heading": "Test Heading",
-        "author": "Test Author",
-        "status": "active"
-    }
+    request = RAGUpsertRequest(
+        document=RAGDocumentData(
+            text="Test document content",
+            heading="Test Heading",
+            author="Test Author",
+            original_id="123e4567-e89b-12d3-a456-426614174000",
+            status="active"
+        ),
+        namespace="waterworks-department"
+    )
     
     with pytest.raises(NotImplementedError) as exc_info:
-        await client.upsert_document(document_data)
+        await client.upsert_document(request)
     
     assert "gRPC RAG client is not yet implemented" in str(exc_info.value)
 
@@ -289,6 +434,26 @@ async def test_grpc_delete_document_not_implemented():
     
     with pytest.raises(NotImplementedError) as exc_info:
         await client.delete_document(document_id)
+    
+    assert "gRPC RAG client is not yet implemented" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_grpc_search_documents_not_implemented():
+    """Verify GRPCRAGClient.search_documents raises NotImplementedError."""
+    from schemas.rag_schema import RAGSearchRequest
+    
+    client = GRPCRAGClient(grpc_address="localhost:8082")
+    
+    request = RAGSearchRequest(
+        query="test query",
+        top_k=5,
+        similarity_threshold=0.6,
+        namespace="waterworks-department"
+    )
+    
+    with pytest.raises(NotImplementedError) as exc_info:
+        await client.search_documents(request)
     
     assert "gRPC RAG client is not yet implemented" in str(exc_info.value)
 

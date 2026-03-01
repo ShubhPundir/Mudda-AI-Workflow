@@ -6,9 +6,9 @@ Concrete implementations can use HTTP REST or gRPC protocols.
 """
 from abc import ABC, abstractmethod
 from typing import Dict
-from schemas.rag_schema import RAGUpsertRequest
+from schemas.rag_schema import RAGUpsertRequest, RAGSearchRequest, RAGSearchResponse
 
-
+# TODO: separate this later into a document service and rag service
 class RAGClient(ABC):
     """
     Abstract base class for RAG service clients.
@@ -45,6 +45,25 @@ class RAGClient(ABC):
         
         Args:
             document_id: Document UUID as string
+        
+        Raises:
+            Exception: If the RAG service communication fails
+        """
+        pass
+    
+    @abstractmethod
+    async def search_documents(self, request: RAGSearchRequest) -> RAGSearchResponse:
+        """
+        Search for relevant document parts in the RAG service.
+        
+        Sends a search query to the RAG service to retrieve relevant parts
+        of documents from the vector database and OpenSearch.
+        
+        Args:
+            request: RAGSearchRequest containing query, top_k, similarity_threshold, and namespace
+        
+        Returns:
+            RAGSearchResponse containing relevant document parts and total results count
         
         Raises:
             Exception: If the RAG service communication fails
@@ -136,6 +155,46 @@ class HTTPRAGClient(RAGClient):
             raise
         except Exception as e:
             logger.error(f"Unexpected error deleting document from RAG service: {e}")
+            raise
+    
+    async def search_documents(self, request: RAGSearchRequest) -> RAGSearchResponse:
+        """
+        Search for relevant document parts in the RAG service via HTTP POST.
+        
+        Sends a POST request to /rag with the search query parameters.
+        The request body follows the schema defined in RAGSearchRequest.
+        
+        Args:
+            request: RAGSearchRequest containing query, top_k, similarity_threshold, and namespace
+        
+        Returns:
+            RAGSearchResponse containing relevant document parts and total results count
+        
+        Raises:
+            httpx.HTTPError: If the HTTP request fails
+            httpx.TimeoutException: If the request times out
+        """
+        url = f"{self.base_url}/rag"
+        try:
+            # Convert Pydantic model to dict for JSON serialization
+            payload = request.model_dump()
+            response = await self.client.post(url, json=payload)
+            response.raise_for_status()
+            
+            # Parse response into RAGSearchResponse
+            response_data = response.json()
+            search_response = RAGSearchResponse(**response_data)
+            
+            logger.debug(f"Successfully searched documents with query '{request.query}', found {search_response.total_results} results")
+            return search_response
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error searching documents in RAG service: {e}")
+            raise
+        except httpx.TimeoutException as e:
+            logger.error(f"Timeout searching documents in RAG service: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error searching documents in RAG service: {e}")
             raise
     
     async def close(self):
@@ -235,6 +294,41 @@ class GRPCRAGClient(RAGClient):
         # TODO: Implement actual gRPC call
         # request = rag_service_pb2.DeleteDocumentRequest(id=document_id)
         # response = await self.stub.DeleteDocument(request)
+        raise NotImplementedError("gRPC RAG client is not yet implemented")
+    
+    async def search_documents(self, request: RAGSearchRequest) -> RAGSearchResponse:
+        """
+        Search for relevant document parts in the RAG service via gRPC (placeholder).
+        
+        Args:
+            request: RAGSearchRequest containing query, top_k, similarity_threshold, and namespace
+        
+        Returns:
+            RAGSearchResponse containing relevant document parts and total results count
+        
+        TODO: Implement gRPC search call
+        - Convert RAGSearchRequest to protobuf SearchDocumentsRequest message
+        - Call self.stub.SearchDocuments(request)
+        - Convert protobuf response to RAGSearchResponse
+        - Handle gRPC exceptions (grpc.RpcError)
+        - Map gRPC status codes to appropriate exceptions
+        
+        Raises:
+            NotImplementedError: This is a placeholder implementation
+        """
+        logger.warning(f"GRPCRAGClient.search_documents called but not implemented (query: {request.query})")
+        # TODO: Implement actual gRPC call
+        # grpc_request = rag_service_pb2.SearchDocumentsRequest(
+        #     query=request.query,
+        #     top_k=request.top_k,
+        #     similarity_threshold=request.similarity_threshold,
+        #     namespace=request.namespace
+        # )
+        # response = await self.stub.SearchDocuments(grpc_request)
+        # return RAGSearchResponse(
+        #     relevant_parts=[...],
+        #     total_results=response.total_results
+        # )
         raise NotImplementedError("gRPC RAG client is not yet implemented")
     
     async def close(self):
