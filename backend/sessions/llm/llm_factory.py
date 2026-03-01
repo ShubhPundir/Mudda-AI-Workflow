@@ -25,6 +25,7 @@ class LLMFactory:
         """
         if cls._instance is None:
             provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+            # TODO: should be in config.py
             
             if provider == "bedrock":
                 cls._instance = BedrockLLMAdapter()
