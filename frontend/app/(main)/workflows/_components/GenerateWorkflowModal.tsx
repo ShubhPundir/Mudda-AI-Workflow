@@ -87,28 +87,53 @@ export default function GenerateWorkflowModal({
               const data = JSON.parse(dataStr);
 
               // Handle different event types
-              if (currentEvent === 'component_selection_start') {
+              if (currentEvent === 'policy_retrieval_start') {
                 updateLoaderState({
                   agent1Status: 'active',
                   agent2Status: 'idle',
+                  agent3Status: 'idle',
+                  agent4Status: 'idle',
                   currentMessage: data.message,
-                  stage: 'component_selection',
+                  stage: 'policy_retrieval',
                 });
-              } else if (currentEvent === 'component_selection_complete') {
+              } else if (currentEvent === 'policy_retrieval_complete') {
                 updateLoaderState({
                   agent1Status: 'complete',
-                  selectedComponents: data.components || [],
+                  retrievedPolicies: data.policies || [],
+                  currentMessage: data.message,
+                });
+              } else if (currentEvent === 'activity_selection_start') {
+                updateLoaderState({
+                  agent2Status: 'active',
+                  currentMessage: data.message,
+                  stage: 'activity_selection',
+                });
+              } else if (currentEvent === 'activity_selection_complete') {
+                updateLoaderState({
+                  agent2Status: 'complete',
+                  selectedComponents: data.activities || [],
                   currentMessage: data.message,
                 });
               } else if (currentEvent === 'workflow_generation_start') {
                 updateLoaderState({
-                  agent2Status: 'active',
+                  agent3Status: 'active',
                   currentMessage: data.message,
                   stage: 'workflow_generation',
                 });
               } else if (currentEvent === 'workflow_generation_complete') {
                 updateLoaderState({
-                  agent2Status: 'complete',
+                  agent3Status: 'complete',
+                  currentMessage: data.message,
+                });
+              } else if (currentEvent === 'plan_validation_start') {
+                updateLoaderState({
+                  agent4Status: 'active',
+                  currentMessage: data.message,
+                  stage: 'plan_validation',
+                });
+              } else if (currentEvent === 'plan_validation_complete') {
+                updateLoaderState({
+                  agent4Status: 'complete',
                   currentMessage: data.message,
                 });
               } else if (currentEvent === 'workflow_saved') {

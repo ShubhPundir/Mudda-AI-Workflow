@@ -9,42 +9,72 @@ interface ProgressTimelineProps {
 
 export function ProgressTimeline({ state }: ProgressTimelineProps) {
     return (
-        <div className="flex items-center justify-center mb-10 space-x-4">
-            <ProgressStep
-                stepNumber={1}
-                label="Component Selection"
-                isActive={state.stage === 'component_selection'}
-                isComplete={state.agent1Status === 'complete'}
-                activeColor="blue"
-            />
+        <div className="flex items-center justify-center mb-10 overflow-x-auto">
+            <div className="flex items-center space-x-2 min-w-max px-4">
+                <ProgressStep
+                    stepNumber={1}
+                    label="Policy Retrieval"
+                    isActive={state.stage === 'policy_retrieval'}
+                    isComplete={state.agent1Status === 'complete'}
+                    activeColor="cyan"
+                />
 
-            <ProgressConnector
-                isComplete={state.agent1Status === 'complete'}
-                fromColor="blue"
-                toColor="purple"
-            />
+                <ProgressConnector
+                    isComplete={state.agent1Status === 'complete'}
+                    fromColor="cyan"
+                    toColor="blue"
+                />
 
-            <ProgressStep
-                stepNumber={2}
-                label="Workflow Planning"
-                isActive={state.stage === 'workflow_generation'}
-                isComplete={state.agent2Status === 'complete'}
-                activeColor="purple"
-            />
+                <ProgressStep
+                    stepNumber={2}
+                    label="Activity Selection"
+                    isActive={state.stage === 'activity_selection'}
+                    isComplete={state.agent2Status === 'complete'}
+                    activeColor="blue"
+                />
 
-            <ProgressConnector
-                isComplete={state.agent2Status === 'complete'}
-                fromColor="purple"
-                toColor="green"
-            />
+                <ProgressConnector
+                    isComplete={state.agent2Status === 'complete'}
+                    fromColor="blue"
+                    toColor="purple"
+                />
 
-            <ProgressStep
-                stepNumber="✓"
-                label=""
-                isActive={state.stage === 'complete'}
-                isComplete={false}
-                activeColor="green"
-            />
+                <ProgressStep
+                    stepNumber={3}
+                    label="Workflow Planning"
+                    isActive={state.stage === 'workflow_generation'}
+                    isComplete={state.agent3Status === 'complete'}
+                    activeColor="purple"
+                />
+
+                <ProgressConnector
+                    isComplete={state.agent3Status === 'complete'}
+                    fromColor="purple"
+                    toColor="green"
+                />
+
+                <ProgressStep
+                    stepNumber={4}
+                    label="Plan Validation"
+                    isActive={state.stage === 'plan_validation'}
+                    isComplete={state.agent4Status === 'complete'}
+                    activeColor="green"
+                />
+
+                <ProgressConnector
+                    isComplete={state.agent4Status === 'complete'}
+                    fromColor="green"
+                    toColor="emerald"
+                />
+
+                <ProgressStep
+                    stepNumber="✓"
+                    label=""
+                    isActive={state.stage === 'complete'}
+                    isComplete={false}
+                    activeColor="emerald"
+                />
+            </div>
         </div>
     );
 }

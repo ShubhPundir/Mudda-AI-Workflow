@@ -59,6 +59,7 @@ class Settings:
     RAG_SERVICE_URL: str = os.getenv("RAG_SERVICE_URL", "http://localhost:8082")
     RAG_PROTOCOL: str = os.getenv("RAG_PROTOCOL", "http")  # "http" or "grpc"
     RAG_GRPC_ADDRESS: str = os.getenv("RAG_GRPC_ADDRESS", "localhost:8082")
+    RAG_NAMESPACE: str = os.getenv("RAG_NAMESPACE", "waterworks-department")  # Default namespace for policy retrieval
 
     # Application
     APP_NAME: str = "Mudda AI Workflow System"

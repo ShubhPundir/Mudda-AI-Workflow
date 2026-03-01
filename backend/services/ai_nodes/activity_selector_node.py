@@ -16,23 +16,24 @@ async def activity_selector_node(state: GraphState) -> GraphState:
     Node for selecting relevant activities using structured output
     
     This node:
-    1. Analyzes the problem statement
+    1. Analyzes the problem statement and retrieved policies
     2. Reviews available activities from the registry
     3. Uses LLM with structured output to select relevant activities
     4. Returns updated state with selected activities
     
     Args:
-        state: Current graph state containing problem_statement
+        state: Current graph state containing problem_statement and retrieved_policies
         
     Returns:
         Updated graph state with selected_activity_ids and selected_activities
     """
     problem_statement = state["problem_statement"]
+    retrieved_policies = state.get("retrieved_policies", [])
     
     # Update progress
     new_state = state.copy()
     new_state["current_step"] = "activity_selection_start"
-    new_state["message"] = "Agent 1: Analyzing problem and selecting activities..."
+    new_state["message"] = "Agent 2: Analyzing problem and selecting activities based on policies..."
 
     try:
         # Get LLM service
@@ -41,15 +42,27 @@ async def activity_selector_node(state: GraphState) -> GraphState:
         # Use static metadata from registry
         activities_list = list(ACTIVITY_METADATA.values())
         
+        # Format retrieved policies for the prompt
+        policies_context = ""
+        if retrieved_policies:
+            policies_context = "\n\nRelevant Policies from Knowledge Base:\n"
+            for idx, policy in enumerate(retrieved_policies, 1):
+                policies_context += f"\n{idx}. {policy['heading']} (by {policy['author']})\n"
+                policies_context += f"   Relevance Score: {policy['similarity_score']:.2f}\n"
+                policies_context += f"   Content: {policy['text'][:500]}...\n"
+        
         # Build prompt
         system_prompt = get_activity_selection_prompt()
         selection_prompt = f"""
 Problem Statement: {problem_statement}
+{policies_context}
 
 Available Activities:
 {json.dumps(activities_list, indent=2)}
 
-Select the activity IDs that are relevant for solving this problem.
+Based on the problem statement and the relevant policies retrieved from the knowledge base, 
+select the activity IDs that are most appropriate for solving this problem while ensuring 
+compliance with the applicable regulations and procedures.
 """
         
         prompt = f"{system_prompt}\n\n{selection_prompt}"
@@ -74,7 +87,7 @@ Select the activity IDs that are relevant for solving this problem.
         new_state["selected_activity_ids"] = selected_ids
         new_state["selected_activities"] = selected_activities
         new_state["current_step"] = "activity_selection_complete"
-        new_state["message"] = f"Agent 1: Selected {len(selected_ids)} activities"
+        new_state["message"] = f"Agent 2: Selected {len(selected_ids)} activities based on {len(retrieved_policies)} policies"
         return new_state
         
     except Exception as e:

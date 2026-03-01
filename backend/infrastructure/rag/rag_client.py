@@ -174,7 +174,7 @@ class HTTPRAGClient(RAGClient):
             httpx.HTTPError: If the HTTP request fails
             httpx.TimeoutException: If the request times out
         """
-        url = f"{self.base_url}/rag"
+        url = f"{self.base_url}/rag/"
         try:
             # Convert Pydantic model to dict for JSON serialization
             payload = request.model_dump()
