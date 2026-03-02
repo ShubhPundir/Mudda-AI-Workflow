@@ -61,13 +61,20 @@ async def contact_plumber(input: ContactPlumberInput) -> ContactPlumberOutput:
 
 @activity.defn
 async def await_plumber_confirmation_activity(input: AwaitPlumberConfirmationInput) -> AwaitPlumberConfirmationOutput:
-    """Logs that a follow-up is expected from the plumber."""
+    """
+    Logs that a follow-up is expected from the plumber with LLM-generated follow-up instructions.
+    """
     logger.info("await_plumber_confirmation_activity: follow-up expected")
+
+    # Generate intelligent follow-up message using LLM
+    prompt = f"Generate follow-up instructions for plumber confirmation based on: {input.model_dump()}"
+    logger.info("Generating LLM-enhanced follow-up instructions")
+    follow_up_instructions = await _llm_service.generate_report({"problem_statement": prompt})
 
     # TODO: Implement actual waiting mechanism (e.g., polling, signal) in Backend
 
     # Simulation: Log to DB or system that we are waiting for a signal
     return AwaitPlumberConfirmationOutput(
         status="waiting_for_signal",
-        message="System is now expecting a follow-up signal from plumber"
+        message=f"System is now expecting a follow-up signal from plumber. Instructions: {follow_up_instructions[:100]}..."
     )

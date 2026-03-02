@@ -45,9 +45,9 @@ class AIService:
         workflow = StateGraph(GraphState)
 
         # Define nodes (imported from modular files)
-        workflow.add_node("policy_retrieval", policy_retrieval_node)
+        workflow.add_node("policy_retrieval", policy_retrieval_node) # RAG
         workflow.add_node("activity_selector", activity_selector_node)
-        workflow.add_node("plan_maker", plan_maker_node)
+        workflow.add_node("plan_maker", plan_maker_node) # FIX via usage of compiler
         workflow.add_node("plan_validator", plan_validator_node)
 
         # Define edges
