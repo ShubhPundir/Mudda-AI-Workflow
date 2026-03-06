@@ -231,16 +231,12 @@ class FetchIssueDetailsOutput(BaseModel):
 class SendNotificationInput(BaseModel):
     """Input schema for send_notification activity."""
     to: List[str] | str = Field(..., description="Recipient email address(es)")
-    subject: str = Field(..., description="Email subject")
-    body: Optional[str] = Field(None, description="Plain-text email body")
-    html: Optional[str] = Field(None, description="HTML email body")
+    content: str = Field(..., description="Description of what the email should communicate. LLM will generate subject and body from this.")
     from_email: Optional[str] = Field(None, description="Sender email address")
     from_name: Optional[str] = Field(None, description="Sender display name")
     reply_to: Optional[str] = Field(None, description="Reply-to address")
     cc: Optional[List[str]] = Field(None, description="CC recipients")
     bcc: Optional[List[str]] = Field(None, description="BCC recipients")
-    tags: Optional[List[Dict[str, str]]] = Field(None, description="Email metadata tags")
-    attachments: Optional[List[Dict[str, Any]]] = Field(None, description="Email attachments")
     step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
     issue_id: Optional[str] = Field(default="unknown", description="Related civic issue ID")
     
@@ -256,8 +252,7 @@ class SendNotificationInput(BaseModel):
         json_schema_extra = {
             "example": {
                 "to": ["official@city.gov"],
-                "subject": "Water Leak Report - Main Street",
-                "body": "A water leak has been reported at Main Street.",
+                "content": "Notify the official that the water leak repair has been completed. Include the report URL from the previous step.",
                 "step_id": "step_008",
                 "issue_id": "issue_123"
             }

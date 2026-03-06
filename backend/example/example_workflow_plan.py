@@ -21,7 +21,7 @@ PHOTOSYNTHESIS_WORKFLOW_PLAN = {
                 "step_id": "step_001_generate_pdf",
                 "problem_statement": "Create a comprehensive 300-word educational document explaining the process of photosynthesis, including its importance, the chemical equation, light-dependent and light-independent reactions, and its role in the ecosystem.",
                 "title": "Understanding Photosynthesis: Nature's Energy Conversion",
-                "report_type": "educational"
+                'report_type': 'educational'
             }
         },
         {
@@ -32,9 +32,7 @@ PHOTOSYNTHESIS_WORKFLOW_PLAN = {
             "inputs": {
                 "step_id": "step_002_send_email",
                 "to": "shb.pndr@gmail.com",
-                "subject": "Educational Document: Understanding Photosynthesis",
-                "body": "Hello,\n\nPlease find attached a comprehensive educational document about photosynthesis.\n\nThis document covers:\n- The fundamental process of photosynthesis\n- Chemical equations and reactions\n- Light-dependent and light-independent stages\n- Ecological importance\n\nThe document has been generated and is available at: {{step_001_generate_pdf.s3_url}}\n\nBest regards,\nMudda AI Workflow System",
-                "from_name": "Mudda AI System",
+                "content": "Send an email about the photosynthesis educational document. Mention that a comprehensive educational document about photosynthesis has been generated covering the fundamental process, chemical equations, light-dependent and light-independent reactions, and ecological importance. The document is available for download at {{step_001_generate_pdf.s3_url}}",
                 "issue_id": "example_photosynthesis_001"
             }
         }

@@ -5,7 +5,7 @@ class EmailPayload(TypedDict, total=False):
     to: Any  # List[str] or str
     subject: str
     body: str
-    html: str
+    html: str # unused so far
     from_email: str
     from_name: str
     reply_to: str
