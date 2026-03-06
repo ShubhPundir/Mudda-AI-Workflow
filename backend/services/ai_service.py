@@ -131,8 +131,17 @@ class AIService:
                             {"id": a["id"], "name": a["name"], "description": a["description"]}
                             for a in state.get("selected_activities", [])
                         ]
+                    elif event_type == "workflow_generation_start":
+                        # Emit start event for plan maker
+                        data["status"] = "generating"
+                        data["selected_activities_count"] = len(state.get("selected_activities", []))
                     elif event_type == "workflow_generation_complete":
-                        data["workflow"] = state.get("workflow_json")
+                        # Emit the complete workflow plan
+                        workflow = state.get("workflow_json")
+                        data["workflow"] = workflow
+                        data["plan_json"] = workflow  # Include plan_json for clarity
+                        data["steps_count"] = len(workflow.get("steps", []))
+                        data["workflow_name"] = workflow.get("workflow_name", "")
                     elif event_type == "plan_validation_complete":
                         data["validation"] = state.get("validation_result")
                         data["workflow"] = state.get("workflow_json")

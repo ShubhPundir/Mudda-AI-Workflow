@@ -41,6 +41,13 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
         "inputs": ["issue_id", "status", "notes"],
         "outputs": ["success", "llm_summary", "next_step_recommendation"]
     },
+    "fetch_issue_details_activity": {
+        "id": "fetch_issue_details_activity",
+        "name": "Fetch Issue Details",
+        "description": "Retrieves detailed information about an issue from the database including citizen info, location, and issue history.",
+        "inputs": ["issue_id"],
+        "outputs": ["issue_details", "citizen_name", "location", "issue_type"]
+    },
     "human_feedback_activity": {
         "id": "human_feedback_activity",
         "name": "Request Human Feedback",
