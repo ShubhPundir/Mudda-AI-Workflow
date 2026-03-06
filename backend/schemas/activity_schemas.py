@@ -83,6 +83,88 @@ class UpdateExecutionStatusOutput(BaseModel):
 
 
 # ============================================================================
+# Worker / Dispatch Activities
+# ============================================================================
+
+class DispatchWorkerInput(BaseModel):
+    """Input schema for dispatch_worker_activity."""
+    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
+    worker_type: str = Field(..., description="Type of worker to dispatch (e.g., plumber, electrician)")
+    issue_id: str = Field(..., description="Related civic issue ID")
+    location: str = Field(..., description="Location to dispatch the worker to")
+    urgency: str = Field(default="normal", description="Urgency of the dispatch")
+    description: str = Field(..., description="Description of the task")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "step_id": "step_001_dispatch",
+                "worker_type": "plumber",
+                "issue_id": "ISSUE-2024-00187",
+                "location": "42 MG Road, Sector 14, Gurugram",
+                "urgency": "critical",
+                "description": "Major water pipe burst"
+            }
+        }
+
+
+class DispatchWorkerOutput(BaseModel):
+    """Output schema for dispatch_worker_activity."""
+    step_id: str = Field(..., description="Workflow step identifier")
+    status: str = Field(..., description="Activity completion status")
+    dispatch_id: str = Field(..., description="Unique ID for the dispatch record")
+    worker_notified: bool = Field(..., description="Whether a worker was successfully notified")
+    message: str = Field(..., description="Status message")
+
+
+class RequestSitePhotosInput(BaseModel):
+    """Input schema for request_site_photos_activity."""
+    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
+    dispatch_id: str = Field(..., description="ID of the previously created dispatch")
+    message: str = Field(default="Please upload photos of the site before and after the repair.", description="Instructions for the worker")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "step_id": "step_002_photos",
+                "dispatch_id": "disp_8901",
+                "message": "Upload high-res photos of the broken pipe."
+            }
+        }
+
+
+class RequestSitePhotosOutput(BaseModel):
+    """Output schema for request_site_photos_activity."""
+    step_id: str = Field(..., description="Workflow step identifier")
+    status: str = Field(..., description="Activity completion status")
+    request_id: str = Field(..., description="Unique ID for the photo request")
+
+
+class ConfirmTaskCompletionInput(BaseModel):
+    """Input schema for confirm_task_completion_activity."""
+    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
+    dispatch_id: str = Field(..., description="ID of the dispatch being completed")
+    notes: Optional[str] = Field(None, description="Any closing notes from the internal system")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "step_id": "step_003_confirm",
+                "dispatch_id": "disp_8901",
+                "notes": "Worker uploaded photos and marked as done."
+            }
+        }
+
+
+class ConfirmTaskCompletionOutput(BaseModel):
+    """Output schema for confirm_task_completion_activity."""
+    step_id: str = Field(..., description="Workflow step identifier")
+    status: str = Field(..., description="Activity completion status")
+    confirmed_at: str = Field(..., description="Timestamp of confirmation")
+
+
+
+# ============================================================================
 # Human Activities
 # ============================================================================
 

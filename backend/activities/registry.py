@@ -50,6 +50,27 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
         "inputs": ["issue_id", "status", "notes"],
         "outputs": ["success", "llm_summary", "next_step_recommendation"]
     },
+    "dispatch_worker_activity": {
+        "id": "dispatch_worker_activity",
+        "name": "Dispatch Worker",
+        "description": "Dispatches a worker (plumber, electrician, etc.) to a specific location to resolve an issue.",
+        "inputs": ["worker_type", "issue_id", "location", "description"],
+        "outputs": ["dispatch_id", "status", "worker_notified"]
+    },
+    "request_site_photos_activity": {
+        "id": "request_site_photos_activity",
+        "name": "Request Site Photos",
+        "description": "Requests photos from the dispatched worker for validation or record keeping.",
+        "inputs": ["dispatch_id", "message"],
+        "outputs": ["request_id", "status"]
+    },
+    "confirm_task_completion_activity": {
+        "id": "confirm_task_completion_activity",
+        "name": "Confirm Task Completion",
+        "description": "Marks a worker dispatch task as fully completed in the system.",
+        "inputs": ["dispatch_id", "notes"],
+        "outputs": ["status", "confirmed_at"]
+    },
 }
 
 def _get_activity_registry() -> Dict[str, Callable]:
@@ -65,6 +86,11 @@ def _get_activity_registry() -> Dict[str, Callable]:
         update_issue_activity,
         fetch_issue_details_activity
     )
+    from activities.worker_activities import (
+        dispatch_worker_activity,
+        request_site_photos_activity,
+        confirm_task_completion_activity
+    )
     
     
     return {
@@ -72,6 +98,9 @@ def _get_activity_registry() -> Dict[str, Callable]:
         "pdf_service_activity": pdf_service_activity,
         "update_issue_activity": update_issue_activity,
         "fetch_issue_details_activity": fetch_issue_details_activity,
+        "dispatch_worker_activity": dispatch_worker_activity,
+        "request_site_photos_activity": request_site_photos_activity,
+        "confirm_task_completion_activity": confirm_task_completion_activity,
     }
 
 
