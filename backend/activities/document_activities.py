@@ -10,6 +10,7 @@ from temporalio import activity
 from infrastructure import PDFFactory, S3Service
 from sessions.llm import LLMFactory
 from schemas.activity_schemas import PDFServiceInput, PDFServiceOutput
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,6 @@ async def pdf_service_activity(input: PDFServiceInput) -> PDFServiceOutput:
         ai_metadata={
             "report_type": input.report_type,
             "report_length_chars": len(report_text),
-            "model": setting.LLM_PROVIDER.lower(), 
+            "model": settings.LLM_PROVIDER.lower(), 
         },
     )

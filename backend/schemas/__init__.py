@@ -47,10 +47,7 @@ from .activity_schemas import (
     UpdateIssueOutput,
     FetchIssueDetailsInput,
     FetchIssueDetailsOutput,
-    # LLM Activities
-    LLMGenerateDispatchTextInput,
-    LLMGenerateDispatchTextOutput,
-    GenerateLLMContentInput,
+    
     GenerateLLMContentOutput,
     # Notification Activities
     SendNotificationInput,
@@ -99,11 +96,6 @@ __all__ = [
     "UpdateIssueOutput",
     "FetchIssueDetailsInput",
     "FetchIssueDetailsOutput",
-    # Activity schemas - LLM
-    "LLMGenerateDispatchTextInput",
-    "LLMGenerateDispatchTextOutput",
-    "GenerateLLMContentInput",
-    "GenerateLLMContentOutput",
     # Activity schemas - Notification
     "SendNotificationInput",
     "SendNotificationOutput",

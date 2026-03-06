@@ -15,7 +15,6 @@ __all__ = [
     "pdf_service_activity",
     "update_issue_activity",
     "update_execution_status",
-    "generate_llm_content",
     "human_feedback_activity",
     "human_verification_activity",
 ]

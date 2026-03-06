@@ -222,52 +222,6 @@ class FetchIssueDetailsOutput(BaseModel):
     details: Dict[str, Any] = Field(..., description="Issue details")
 
 
-# ============================================================================
-# LLM Activities
-# ============================================================================
-
-class LLMGenerateDispatchTextInput(BaseModel):
-    """Input schema for llm_generate_dispatch_text_activity."""
-    description: str = Field(..., description="Problem description")
-    category: Optional[str] = Field(default="General", description="Issue category")
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "description": "Water main break on Oak Avenue",
-                "category": "Water Emergency",
-                "step_id": "step_006"
-            }
-        }
-
-
-class LLMGenerateDispatchTextOutput(BaseModel):
-    """Output schema for llm_generate_dispatch_text_activity."""
-    dispatch_text: str = Field(..., description="Generated dispatch instructions")
-    status: str = Field(..., description="Generation status")
-
-
-class GenerateLLMContentInput(BaseModel):
-    """Input schema for generate_llm_content activity."""
-    problem_statement: str = Field(..., description="Problem statement for content generation")
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    context: Optional[Dict[str, Any]] = Field(None, description="Additional context for generation")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "problem_statement": "Generate summary of water infrastructure issues",
-                "step_id": "step_007",
-                "context": {"location": "Downtown", "timeframe": "last_month"}
-            }
-        }
-
-
-class GenerateLLMContentOutput(BaseModel):
-    """Output schema for generate_llm_content activity."""
-    content: str = Field(..., description="Generated content")
-    status: str = Field(..., description="Generation status")
 
 
 # ============================================================================
