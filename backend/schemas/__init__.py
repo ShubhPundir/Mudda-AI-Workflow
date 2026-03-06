@@ -48,7 +48,6 @@ from .activity_schemas import (
     FetchIssueDetailsInput,
     FetchIssueDetailsOutput,
     
-    GenerateLLMContentOutput,
     # Notification Activities
     SendNotificationInput,
     SendNotificationOutput,
