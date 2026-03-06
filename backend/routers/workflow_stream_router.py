@@ -30,12 +30,43 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
         SSE-formatted strings
     """
     workflow_json = None
+    rag_service_unavailable = False
     
     try:
+        # Check RAG service availability before starting
+        from infrastructure.rag import get_rag_client
+        rag_client = get_rag_client()
+        
+        if rag_client is None:
+            rag_service_unavailable = True
+            # Send warning event about RAG service
+            warning_data = {
+                "message": "RAG service is unavailable - workflow will be generated without policy context",
+                "service": "rag",
+                "severity": "warning",
+                "impact": "Policy retrieval will be skipped"
+            }
+            yield f"event: service_warning\n"
+            yield f"data: {json.dumps(warning_data)}\n\n"
+        
         # Stream progress events from AI service
         async for event in ai_service.generate_workflow_plan_stream(problem_statement):
             event_type = event.get("event", "message")
             event_data = event.get("data", {})
+            
+            # Check if policy retrieval failed and send additional warning
+            if event_type == "policy_retrieval_complete":
+                if not event_data.get("rag_available", True):
+                    # Send explicit warning event
+                    warning_data = {
+                        "message": event_data.get("warning", "Policy retrieval failed"),
+                        "service": "rag",
+                        "severity": "warning",
+                        "impact": "Workflow generated without policy compliance context",
+                        "policies_retrieved": len(event_data.get("policies", []))
+                    }
+                    yield f"event: service_warning\n"
+                    yield f"data: {json.dumps(warning_data)}\n\n"
             
             # Store workflow JSON when generation completes
             if event_type == "workflow_generation_complete":
@@ -66,7 +97,8 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
             success_data = {
                 "workflow_id": str(workflow_plan.id),
                 "workflow_name": workflow_json["workflow_name"],
-                "created_at": workflow_plan.created_at.isoformat() if workflow_plan.created_at else datetime.utcnow().isoformat()
+                "created_at": workflow_plan.created_at.isoformat() if workflow_plan.created_at else datetime.utcnow().isoformat(),
+                "rag_service_available": not rag_service_unavailable
             }
             yield f"event: workflow_saved\n"
             yield f"data: {json.dumps(success_data)}\n\n"

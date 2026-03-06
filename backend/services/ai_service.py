@@ -115,6 +115,7 @@ class AIService:
                     }
                     
                     if event_type == "policy_retrieval_complete":
+                        policies = state.get("retrieved_policies", [])
                         data["policies"] = [
                             {
                                 "document_id": p.get("document_id"),
@@ -124,8 +125,14 @@ class AIService:
                                 "similarity_score": p.get("similarity_score"),
                                 "source": p.get("source")
                             }
-                            for p in state.get("retrieved_policies", [])
+                            for p in policies
                         ]
+                        # Add warning if no policies were retrieved
+                        if len(policies) == 0:
+                            data["warning"] = "No policies retrieved - RAG service may be unavailable"
+                            data["rag_available"] = False
+                        else:
+                            data["rag_available"] = True
                     elif event_type == "activity_selection_complete":
                         data["activities"] = [
                             {"id": a["id"], "name": a["name"], "description": a["description"]}
