@@ -21,8 +21,11 @@ from temporalio.common import RetryPolicy
 
 # Import activity references
 with workflow.unsafe.imports_passed_through():
-    from activities.registry import ACTIVITY_REGISTRY
+    from activities.registry import get_activity_registry
     from activities.execution_tracking_activities import update_execution_status
+    
+    # Force registry to load during import time (not during workflow execution)
+    _ACTIVITY_REGISTRY = get_activity_registry()
 
 
 @workflow.defn
@@ -132,7 +135,7 @@ class MuddaWorkflow:
 
             # ── Execute the activity directly ────────────
             try:
-                activity_handler = ACTIVITY_REGISTRY.get(activity_id)
+                activity_handler = _ACTIVITY_REGISTRY.get(activity_id)
                 if not activity_handler:
                     raise ValueError(f"Activity '{activity_id}' not found in registry")
 

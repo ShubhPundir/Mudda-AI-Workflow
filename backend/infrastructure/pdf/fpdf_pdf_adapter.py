@@ -37,6 +37,34 @@ class FPDFPDFAdapter(PDFInterface):
         logger.info("Generating PDF via FPDF — title=%r file=%s", title, filename)
 
         try:
+            # Sanitize content to remove Unicode characters that Helvetica can't handle
+            # Replace common Unicode characters with ASCII equivalents
+            content_sanitized = content
+            unicode_replacements = {
+                '→': '->',
+                '←': '<-',
+                '↑': '^',
+                '↓': 'v',
+                '•': '*',
+                '–': '-',
+                '—': '--',
+                '"': '"',
+                '"': '"',
+                ''': "'",
+                ''': "'",
+                '…': '...',
+                '°': ' degrees',
+                '±': '+/-',
+                '×': 'x',
+                '÷': '/',
+            }
+            
+            for unicode_char, ascii_replacement in unicode_replacements.items():
+                content_sanitized = content_sanitized.replace(unicode_char, ascii_replacement)
+            
+            # Remove any remaining non-Latin-1 characters
+            content_sanitized = content_sanitized.encode('latin-1', errors='ignore').decode('latin-1')
+            
             pdf = FPDF()
             pdf.set_auto_page_break(auto=True, margin=15)
             pdf.add_page()
@@ -48,7 +76,7 @@ class FPDFPDFAdapter(PDFInterface):
             pdf.ln(10)
             
             pdf.set_font("helvetica", "", 12)
-            pdf.multi_cell(0, 10, content)
+            pdf.multi_cell(0, 10, content_sanitized)
             
             pdf.output(file_path)
 
