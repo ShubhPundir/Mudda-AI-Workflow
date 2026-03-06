@@ -130,18 +130,37 @@ async def main():
             logger.info(f"\n🛠️ Worker Dispatched:")
             logger.info(f"   Dispatch ID: {dispatch_result.get('dispatch_id')}")
             logger.info(f"   Status: {dispatch_result.get('status')}")
+            logger.info(f"   Worker: {dispatch_result.get('worker_name')}")
+            logger.info(f"   Phone: {dispatch_result.get('worker_phone')}")
+            logger.info(f"   ETA: {dispatch_result.get('estimated_arrival')}")
+            logger.info(f"   Worker Response: \"{dispatch_result.get('worker_response')}\"")
             logger.info(f"   Worker Notified: {dispatch_result.get('worker_notified')}")
-            logger.info(f"   Message: {dispatch_result.get('message')}")
 
         if photos_result:
-            logger.info(f"\n📷 Photos Requested:")
+            logger.info(f"\n📷 Photos Received:")
             logger.info(f"   Request ID: {photos_result.get('request_id')}")
             logger.info(f"   Status: {photos_result.get('status')}")
+            logger.info(f"   Photos Uploaded: {photos_result.get('photos_uploaded')}")
+            logger.info(f"   Worker Notes: \"{photos_result.get('worker_notes')}\"")
+            
+            photo_urls = photos_result.get('photo_urls', [])
+            if photo_urls:
+                logger.info(f"   Photo URLs:")
+                for i, url in enumerate(photo_urls, 1):
+                    logger.info(f"      {i}. {url}")
 
         if completion_result:
             logger.info(f"\n✅ Task Completed:")
             logger.info(f"   Status: {completion_result.get('status')}")
             logger.info(f"   Confirmed At: {completion_result.get('confirmed_at')}")
+            logger.info(f"   Time Spent: {completion_result.get('time_spent_minutes')} minutes")
+            logger.info(f"   Completion Notes: \"{completion_result.get('completion_notes')}\"")
+            
+            materials = completion_result.get('materials_used', [])
+            if materials:
+                logger.info(f"   Materials Used: {', '.join(materials)}")
+            
+            logger.info(f"   Follow-up Required: {completion_result.get('follow_up_required')}")
 
         logger.info("\n" + "=" * 80)
 

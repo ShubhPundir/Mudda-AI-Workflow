@@ -115,6 +115,10 @@ class DispatchWorkerOutput(BaseModel):
     dispatch_id: str = Field(..., description="Unique ID for the dispatch record")
     worker_notified: bool = Field(..., description="Whether a worker was successfully notified")
     message: str = Field(..., description="Status message")
+    worker_name: Optional[str] = Field(None, description="Name of the assigned worker")
+    worker_phone: Optional[str] = Field(None, description="Contact number of the worker")
+    estimated_arrival: Optional[str] = Field(None, description="Estimated arrival time")
+    worker_response: Optional[str] = Field(None, description="Worker's acknowledgment message")
 
 
 class RequestSitePhotosInput(BaseModel):
@@ -138,6 +142,9 @@ class RequestSitePhotosOutput(BaseModel):
     step_id: str = Field(..., description="Workflow step identifier")
     status: str = Field(..., description="Activity completion status")
     request_id: str = Field(..., description="Unique ID for the photo request")
+    photos_uploaded: Optional[int] = Field(None, description="Number of photos uploaded")
+    photo_urls: Optional[list[str]] = Field(None, description="Mock S3 URLs of uploaded photos")
+    worker_notes: Optional[str] = Field(None, description="Notes from the worker about the photos")
 
 
 class ConfirmTaskCompletionInput(BaseModel):
@@ -161,6 +168,10 @@ class ConfirmTaskCompletionOutput(BaseModel):
     step_id: str = Field(..., description="Workflow step identifier")
     status: str = Field(..., description="Activity completion status")
     confirmed_at: str = Field(..., description="Timestamp of confirmation")
+    completion_notes: Optional[str] = Field(None, description="Final notes from the worker")
+    time_spent_minutes: Optional[int] = Field(None, description="Time spent on the task in minutes")
+    materials_used: Optional[list[str]] = Field(None, description="List of materials used")
+    follow_up_required: Optional[bool] = Field(None, description="Whether follow-up is needed")
 
 
 
