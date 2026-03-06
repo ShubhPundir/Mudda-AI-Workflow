@@ -61,16 +61,21 @@ def _get_activity_registry() -> Dict[str, Callable]:
     """
     Lazy-load activity functions to avoid circular imports.
     This function is called when the registry is actually needed.
+    NOTE: Import directly from modules to avoid circular dependency with __init__.py
     """
-    from activities import (
-        send_notification,
+    from activities.notification_activities import send_notification
+    from activities.external_service_activities import (
         contact_plumber,
-        await_plumber_confirmation_activity,
-        pdf_service_activity,
+        await_plumber_confirmation_activity
+    )
+    from activities.document_activities import pdf_service_activity
+    from activities.issue_activities import (
         update_issue_activity,
-        fetch_issue_details_activity,
+        fetch_issue_details_activity
+    )
+    from activities.human_activities import (
         human_feedback_activity,
-        human_verification_activity,
+        human_verification_activity
     )
     
     return {

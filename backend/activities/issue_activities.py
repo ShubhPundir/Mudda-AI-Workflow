@@ -65,3 +65,45 @@ async def update_issue_activity(input: UpdateIssueInput) -> UpdateIssueOutput:
         logger.error("Failed to update issue: %s", exc, exc_info=True)
         raise
 
+
+# NOTE: keeping it now for backward's compatibility
+@activity.defn
+async def fetch_issue_details_activity(input: FetchIssueDetailsInput) -> FetchIssueDetailsOutput:
+    """
+    Fetch details for a specific issue from the API with LLM-powered analysis.
+
+    Args:
+        input: FetchIssueDetailsInput containing issue_id and step_id.
+
+    Returns:
+        FetchIssueDetailsOutput with issue details and intelligent analysis for next activities.
+    """
+    logger.info(
+        "fetch_issue_details_activity — step_id=%s issue_id=%s",
+        input.step_id,
+        input.issue_id,
+    )
+
+    try:
+        details = await fetch_issue_details(input.issue_id)
+        
+        # Use LLM to analyze issue details and prepare data for downstream activities
+        prompt = f"Analyze this issue and extract key information for workflow processing: {details}"
+        logger.info("Generating LLM-powered issue analysis")
+        analysis = await _llm_service.generate_report({"problem_statement": prompt})
+        
+        # Enhance details with LLM analysis
+        enhanced_details = details.copy() if isinstance(details, dict) else {"raw_details": details}
+        enhanced_details["llm_analysis"] = analysis
+        enhanced_details["extracted_urgency"] = "medium"  # LLM could extract this
+        enhanced_details["recommended_actions"] = analysis
+
+        return FetchIssueDetailsOutput(
+            step_id=input.step_id,
+            issue_id=input.issue_id,
+            status="completed",
+            details=enhanced_details
+        )
+    except Exception as exc:
+        logger.error("Failed to fetch issue details: %s", exc, exc_info=True)
+        raise

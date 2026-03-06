@@ -37,7 +37,7 @@ class Settings:
     AWS_REGION: str = os.getenv("AWS_REGION", "ap-south-1")
 
     # S3 Configuration
-    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "mudda-documents")
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "mudda-ai-workflow")
     
     # SendGrid
     SENDGRID_API_KEY: str = os.getenv("SENDGRID_API_KEY", "")
