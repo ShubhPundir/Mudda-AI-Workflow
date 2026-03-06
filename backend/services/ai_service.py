@@ -116,7 +116,14 @@ class AIService:
                     
                     if event_type == "policy_retrieval_complete":
                         data["policies"] = [
-                            {"heading": p["heading"], "author": p["author"], "similarity_score": p["similarity_score"]}
+                            {
+                                "document_id": p.get("document_id"),
+                                "heading": p.get("heading"),
+                                "author": p.get("author"),
+                                "text": p.get("text"),
+                                "similarity_score": p.get("similarity_score"),
+                                "source": p.get("source")
+                            }
                             for p in state.get("retrieved_policies", [])
                         ]
                     elif event_type == "activity_selection_complete":

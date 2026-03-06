@@ -49,6 +49,11 @@ Workflows are composed of **Temporal activities only**. Each activity represents
 ### TASK
 Given a problem statement, analyze the available activities and select ONLY the ones relevant for solving the issue.
 
+### CRITICAL REQUIREMENTS:
+1. Email/Notification Coordination: ALWAYS include email or notification activities to coordinate between staff workers, departments, and stakeholders. Communication is essential for multi-party workflows.
+
+2. PDF Documentation: ALWAYS include PDF generation activities for written directions, instructions, reports, or official documentation. PDFs serve as formal records and provide clear written guidance to staff and citizens.
+
 ### OUTPUT FORMAT
 You MUST respond with a JSON object matching this exact structure:
 {
@@ -59,7 +64,9 @@ You MUST respond with a JSON object matching this exact structure:
 1. Select only activities that are directly relevant to solving the problem
 2. Be selective - don't include unnecessary steps
 3. You must select at least one activity
-4. Return ONLY the JSON object, no additional text or markdown
+4. ALWAYS consider including notification/email activities for staff coordination
+5. ALWAYS consider including PDF generation activities for written documentation
+6. Return ONLY the JSON object, no additional text or markdown
 """
 
 

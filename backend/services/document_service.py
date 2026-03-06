@@ -42,15 +42,15 @@ class DocumentService:
 
     async def upsert_document(self, document_data: 'DocumentCreate') -> 'DocumentResponse':
         """
-        Create a new document or update an existing one.
+        Create a new document or update an existing one atomically.
         
-        This method implements the upsert operation:
+        This method implements an atomic upsert operation:
         - If document_data.id is None, generates a new UUID and creates a new document
         - If document_data.id exists in the database, updates the existing document
         - If document_data.id is provided but doesn't exist, creates a new document with that ID
         
-        After the database operation, synchronizes the document with the RAG service.
-        RAG synchronization failures are logged but do not fail the operation.
+        The operation is atomic: both PostgreSQL and RAG upserts must succeed.
+        If RAG synchronization fails, the database transaction is rolled back.
         
         Args:
             document_data: DocumentCreate schema with document fields
@@ -59,7 +59,7 @@ class DocumentService:
             DocumentResponse with the created/updated document data
             
         Raises:
-            Exception: If database operation fails
+            Exception: If database operation or RAG synchronization fails
         """
         from sqlalchemy import select
         from models.document import Document
@@ -69,34 +69,59 @@ class DocumentService:
         # Generate UUID if not provided
         doc_id = document_data.id or uuid.uuid4()
         
-        # Check if document exists by ID
-        result = await self.db.execute(select(Document).where(Document.id == doc_id))
-        existing_doc = result.scalar_one_or_none()
+        # Store previous state for rollback if needed
+        previous_state = None
+        is_update = False
         
-        if existing_doc:
-            # Update existing document
-            logger.debug(f"Updating existing document with ID: {doc_id}")
-            for key, value in document_data.model_dump(exclude_unset=True, exclude={'id'}).items():
-                setattr(existing_doc, key, value)
-            document = existing_doc
-        else:
-            # Insert new document
-            logger.debug(f"Creating new document with ID: {doc_id}")
-            document = Document(
-                id=doc_id,
-                **document_data.model_dump(exclude={'id'})
-            )
-            self.db.add(document)
-        
-        # Commit transaction and refresh document
-        await self.db.commit()
-        await self.db.refresh(document)
-        
-        # Call _sync_to_rag_upsert helper
-        await self._sync_to_rag_upsert(document)
-        
-        # Return DocumentResponse
-        return DocumentResponse.model_validate(document)
+        try:
+            # Check if document exists by ID
+            result = await self.db.execute(select(Document).where(Document.id == doc_id))
+            existing_doc = result.scalar_one_or_none()
+            
+            if existing_doc:
+                # Store previous state for potential rollback
+                is_update = True
+                previous_state = {
+                    'text': existing_doc.text,
+                    'heading': existing_doc.heading,
+                    'author': existing_doc.author,
+                    'status': existing_doc.status,
+                    'namespace': existing_doc.namespace
+                }
+                
+                # Update existing document
+                logger.debug(f"Updating existing document with ID: {doc_id}")
+                for key, value in document_data.model_dump(exclude_unset=True, exclude={'id'}).items():
+                    setattr(existing_doc, key, value)
+                document = existing_doc
+            else:
+                # Insert new document
+                logger.debug(f"Creating new document with ID: {doc_id}")
+                document = Document(
+                    id=doc_id,
+                    **document_data.model_dump(exclude={'id'})
+                )
+                self.db.add(document)
+            
+            # Flush to get document data but don't commit yet
+            await self.db.flush()
+            await self.db.refresh(document)
+            
+            # Sync to RAG - if this fails, we'll rollback the DB transaction
+            await self._sync_to_rag_upsert(document)
+            
+            # Both operations succeeded - commit the transaction
+            await self.db.commit()
+            logger.info(f"Successfully upserted document {doc_id} atomically (DB + RAG)")
+            
+            # Return DocumentResponse
+            return DocumentResponse.model_validate(document)
+            
+        except Exception as e:
+            # Rollback database transaction
+            await self.db.rollback()
+            logger.error(f"Atomic upsert failed for document {doc_id}, rolled back: {e}")
+            raise Exception(f"Failed to upsert document atomically: {str(e)}")
 
     async def get_document(self, document_id: 'uuid.UUID') -> 'Optional[DocumentResponse]':
         """
@@ -183,11 +208,11 @@ class DocumentService:
 
     async def delete_document(self, document_id: 'uuid.UUID') -> bool:
         """
-        Delete a document by its ID.
+        Delete a document by its ID atomically.
 
         Queries the database for a document with the specified ID and deletes it
-        if found. After successful deletion, synchronizes the deletion with the
-        RAG service. RAG synchronization failures are logged but do not fail the operation.
+        if found. The operation is atomic: both PostgreSQL and RAG deletions must succeed.
+        If RAG synchronization fails, the database transaction is rolled back.
 
         Args:
             document_id: UUID of the document to delete
@@ -196,7 +221,7 @@ class DocumentService:
             True if the document was found and deleted, False if not found
 
         Raises:
-            Exception: If database operation fails
+            Exception: If database operation or RAG synchronization fails
         """
         from sqlalchemy import select
         from models.document import Document
@@ -204,71 +229,81 @@ class DocumentService:
 
         logger.debug(f"Deleting document with ID: {document_id}")
 
-        # Query document by ID
-        result = await self.db.execute(select(Document).where(Document.id == document_id))
-        document = result.scalar_one_or_none()
+        try:
+            # Query document by ID
+            result = await self.db.execute(select(Document).where(Document.id == document_id))
+            document = result.scalar_one_or_none()
 
-        # Return False if not found
-        if not document:
-            logger.debug(f"Document {document_id} not found for deletion")
-            return False
+            # Return False if not found
+            if not document:
+                logger.debug(f"Document {document_id} not found for deletion")
+                return False
 
-        # Delete document and commit transaction
-        await self.db.delete(document)
-        await self.db.commit()
-        logger.info(f"Successfully deleted document {document_id}")
+            # Delete document but don't commit yet
+            await self.db.delete(document)
+            await self.db.flush()
+            
+            # Sync to RAG - if this fails, we'll rollback the DB transaction
+            await self._sync_to_rag_delete(document_id)
+            
+            # Both operations succeeded - commit the transaction
+            await self.db.commit()
+            logger.info(f"Successfully deleted document {document_id} atomically (DB + RAG)")
 
-        # Call _sync_to_rag_delete helper
-        await self._sync_to_rag_delete(document_id)
-
-        # Return True on success
-        return True
+            # Return True on success
+            return True
+            
+        except Exception as e:
+            # Rollback database transaction
+            await self.db.rollback()
+            logger.error(f"Atomic delete failed for document {document_id}, rolled back: {e}")
+            raise Exception(f"Failed to delete document atomically: {str(e)}")
 
     async def _sync_to_rag_upsert(self, document: 'Document'):
         """
         Synchronize document upsert to RAG service.
         
         This helper method sends the document data to the RAG service for indexing.
-        Any errors during synchronization are logged but do not fail the operation,
-        ensuring graceful degradation when the RAG service is unavailable.
+        Exceptions are propagated to the caller to enable atomic operations.
         
         Args:
             document: Document model instance to synchronize
+            
+        Raises:
+            Exception: If RAG synchronization fails
         """
-        try:
-            from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
-            
-            # Create RAG request using Pydantic schemas
-            rag_request = RAGUpsertRequest(
-                document=RAGDocumentData(
-                    text=document.text,
-                    heading=document.heading,
-                    author=document.author,
-                    original_id=str(document.id),
-                    status=document.status
-                ),
-                namespace=document.namespace
-            )
-            
-            await self.rag_client.upsert_document(rag_request)
-            logger.info(f"Successfully synchronized document {document.id} to RAG service")
-        except Exception as e:
-            logger.error(f"Failed to sync document {document.id} to RAG service: {e}")
+        from schemas.rag_schema import RAGUpsertRequest, RAGDocumentData
+        
+        # Create RAG request using Pydantic schemas
+        rag_request = RAGUpsertRequest(
+            document=RAGDocumentData(
+                text=document.text,
+                heading=document.heading,
+                author=document.author,
+                original_id=str(document.id),
+                status=document.status
+            ),
+            namespace=document.namespace
+        )
+        
+        # Propagate exceptions for atomic operation
+        await self.rag_client.upsert_document(rag_request)
+        logger.info(f"Successfully synchronized document {document.id} to RAG service")
 
     async def _sync_to_rag_delete(self, document_id: 'uuid.UUID'):
         """
         Synchronize document deletion to RAG service.
         
         This helper method sends a delete request to the RAG service to remove
-        the document from the index. Any errors during synchronization are logged
-        but do not fail the operation, ensuring graceful degradation when the RAG
-        service is unavailable.
+        the document from the index. Exceptions are propagated to the caller
+        to enable atomic operations.
         
         Args:
             document_id: UUID of the document to delete from RAG service
+            
+        Raises:
+            Exception: If RAG deletion fails
         """
-        try:
-            await self.rag_client.delete_document(str(document_id))
-            logger.info(f"Successfully synchronized document deletion {document_id} to RAG service")
-        except Exception as e:
-            logger.error(f"Failed to delete document {document_id} from RAG service: {e}")
+        # Propagate exceptions for atomic operation
+        await self.rag_client.delete_document(str(document_id))
+        logger.info(f"Successfully synchronized document deletion {document_id} to RAG service")
