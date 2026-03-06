@@ -34,8 +34,13 @@ class BrevoEmailAdapter(EmailInterface):
         if not body_text and not body_html:
             raise ValueError("BrevoEmailAdapter.send_email: Either 'body' or 'html' must be provided")
 
-        from_name = payload.get("from_name", self.default_from_name)
-        from_email = payload.get("from_email", self.default_from_email)
+        # TODO: must make this more cleaner inside email_interface post demo launch 
+        from_name = payload.get("from_name") or self.default_from_name
+        from_email = payload.get("from_email") or self.default_from_email
+        
+        # Ensure we have a sender email
+        if not from_email:
+            raise ValueError("BrevoEmailAdapter.send_email: Sender email is required (from_email or EMAIL_FROM_ADDRESS in config)")
 
         # Brevo API format
         data: Dict[str, Any] = {
