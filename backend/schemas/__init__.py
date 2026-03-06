@@ -33,15 +33,9 @@ from .activity_schemas import (
     UpdateExecutionStatusInput,
     UpdateExecutionStatusOutput,
     # External Service Activities
-    ContactPlumberInput,
-    ContactPlumberOutput,
-    AwaitPlumberConfirmationInput,
-    AwaitPlumberConfirmationOutput,
-    # Human Activities
-    HumanFeedbackInput,
-    HumanFeedbackOutput,
-    HumanVerificationInput,
-    HumanVerificationOutput,
+    
+    # Human Signals
+
     # Issue Activities
     UpdateIssueInput,
     UpdateIssueOutput,
@@ -81,15 +75,9 @@ __all__ = [
     "UpdateExecutionStatusInput",
     "UpdateExecutionStatusOutput",
     # Activity schemas - External Services
-    "ContactPlumberInput",
-    "ContactPlumberOutput",
-    "AwaitPlumberConfirmationInput",
-    "AwaitPlumberConfirmationOutput",
+
     # Activity schemas - Human
-    "HumanFeedbackInput",
-    "HumanFeedbackOutput",
-    "HumanVerificationInput",
-    "HumanVerificationOutput",
+
     # Activity schemas - Issue
     "UpdateIssueInput",
     "UpdateIssueOutput",

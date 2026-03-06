@@ -81,95 +81,11 @@ class UpdateExecutionStatusOutput(BaseModel):
 # External Service Activities
 # ============================================================================
 
-class ContactPlumberInput(BaseModel):
-    """Input schema for contact_plumber activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    issue_id: Optional[str] = Field(None, description="Related civic issue ID")
-    location: Optional[str] = Field(None, description="Service location")
-    description: Optional[str] = Field(None, description="Problem description")
-    urgency: Optional[str] = Field(default="medium", description="Urgency level")
-    
-    @field_validator('urgency')
-    @classmethod
-    def validate_urgency(cls, v: Optional[str]) -> Optional[str]:
-        """Validate urgency is one of the allowed values."""
-        if v is not None:
-            allowed = ['low', 'medium', 'high', 'critical']
-            if v not in allowed:
-                raise ValueError(f"Urgency must be one of {allowed}")
-        return v
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "step_id": "step_002",
-                "issue_id": "issue_456",
-                "location": "123 Main St",
-                "description": "Burst pipe in basement",
-                "urgency": "high"
-            }
-        }
-
-
-class ContactPlumberOutput(BaseModel):
-    """Output schema for contact_plumber activity."""
-    step_id: str = Field(..., description="Workflow step identifier")
-    service: str = Field(..., description="Service type contacted")
-    result: Dict[str, Any] = Field(..., description="Service response data")
-    status: str = Field(..., description="Activity completion status")
-
-
-class AwaitPlumberConfirmationInput(BaseModel):
-    """Input schema for await_plumber_confirmation_activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    timeout_seconds: Optional[int] = Field(default=3600, description="Timeout for confirmation")
-
-
-class AwaitPlumberConfirmationOutput(BaseModel):
-    """Output schema for await_plumber_confirmation_activity."""
-    status: str = Field(..., description="Waiting status")
-    message: str = Field(..., description="Status message")
-
 
 # ============================================================================
 # Human Activities
 # ============================================================================
 
-class HumanFeedbackInput(BaseModel):
-    """Input schema for human_feedback_activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    prompt: Optional[str] = Field(None, description="Feedback prompt for human")
-    context: Optional[Dict[str, Any]] = Field(None, description="Additional context for decision")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "step_id": "step_003",
-                "prompt": "Approve emergency repair?",
-                "context": {"cost": 5000, "urgency": "high"}
-            }
-        }
-
-
-class HumanFeedbackOutput(BaseModel):
-    """Output schema for human_feedback_activity."""
-    approved: bool = Field(..., description="Whether action was approved")
-    feedback: str = Field(..., description="Human feedback text")
-    status: str = Field(..., description="Activity completion status")
-
-
-class HumanVerificationInput(BaseModel):
-    """Input schema for human_verification_activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    verification_type: Optional[str] = Field(default="quality", description="Type of verification needed")
-    data_to_verify: Optional[Dict[str, Any]] = Field(None, description="Data requiring verification")
-
-
-class HumanVerificationOutput(BaseModel):
-    """Output schema for human_verification_activity."""
-    verified: bool = Field(..., description="Whether verification passed")
-    notes: str = Field(..., description="Verification notes")
-    status: str = Field(..., description="Activity completion status")
 
 
 # ============================================================================
