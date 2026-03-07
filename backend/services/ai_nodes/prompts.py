@@ -49,6 +49,11 @@ Workflows are composed of **Temporal activities only**. Each activity represents
 ### TASK
 Given a problem statement, analyze the available activities and select ONLY the ones relevant for solving the issue.
 
+### CRITICAL REQUIREMENTS:
+1. Email/Notification Coordination: ALWAYS include email or notification activities to coordinate between staff workers, departments, and stakeholders. Communication is essential for multi-party workflows.
+
+2. PDF Documentation: ALWAYS include PDF generation activities for written directions, instructions, reports, or official documentation. PDFs serve as formal records and provide clear written guidance to staff and citizens.
+
 ### OUTPUT FORMAT
 You MUST respond with a JSON object matching this exact structure:
 {
@@ -59,7 +64,9 @@ You MUST respond with a JSON object matching this exact structure:
 1. Select only activities that are directly relevant to solving the problem
 2. Be selective - don't include unnecessary steps
 3. You must select at least one activity
-4. Return ONLY the JSON object, no additional text or markdown
+4. ALWAYS consider including notification/email activities for staff coordination
+5. ALWAYS consider including PDF generation activities for written documentation
+6. Return ONLY the JSON object, no additional text or markdown
 """
 
 
@@ -97,12 +104,72 @@ You MUST respond with a JSON object matching this exact structure:
   ]
 }
 
+### INPUT/OUTPUT FLOW RULES:
+1. Each activity has predefined inputs and outputs (see activity metadata)
+2. You MUST provide ALL required inputs for each activity
+3. The "outputs" field should list the output names from the activity metadata
+4. Outputs from one step can be used as inputs in subsequent steps
+
+### TEMPLATE VARIABLE RULES:
+1. To reference a previous step's output, use: {{step_id.output_name}}
+   - CORRECT: {{step2_contact_plumber.booking_id}}
+   - WRONG: {{step2_contact_plumber.outputs.booking_id}}
+   - Do NOT include ".outputs." in the reference
+   
+2. To reference workflow inputs, use: {{input_name}}
+   - Examples: {{problem_statement}}, {{issue_id}}, {{citizen_id}}
+   
+3. Each step declares its outputs in the "outputs" array as simple strings
+   - Example: "outputs": ["booking_id", "confirmation_number"]
+   - These MUST match the activity's output names from metadata
+
+### EXAMPLE WORKFLOW:
+{
+  "workflow_name": "plumber_dispatch",
+  "description": "Dispatch plumber and generate report",
+  "steps": [
+    {
+      "step_id": "step1_fetch_details",
+      "activity_id": "fetch_issue_details_activity",
+      "description": "Get issue details from database",
+      "inputs": { "issue_id": "{{issue_id}}" },
+      "outputs": ["issue_details", "citizen_name", "location", "issue_type"],
+      "next": ["step2_contact_plumber"]
+    },
+    {
+      "step_id": "step2_contact_plumber",
+      "activity_id": "contact_plumber",
+      "description": "Contact plumber service",
+      "inputs": { 
+        "issue_id": "{{issue_id}}", 
+        "dispatch_text": "{{step1_fetch_details.issue_details}}"
+      },
+      "outputs": ["booking_id", "estimated_arrival"],
+      "next": ["step3_generate_pdf"]
+    },
+    {
+      "step_id": "step3_generate_pdf",
+      "activity_id": "pdf_service_activity",
+      "description": "Generate dispatch report",
+      "inputs": { 
+        "content": "Booking ID: {{step2_contact_plumber.booking_id}}, ETA: {{step2_contact_plumber.estimated_arrival}}",
+        "template_id": "dispatch_report"
+      },
+      "outputs": ["report_url", "executive_summary", "key_findings"],
+      "next": []
+    }
+  ]
+}
+
 ### RULES:
 1. Use only the provided activities - do not create fictional ones
 2. Every step MUST have an `activity_id` that exists in the provided activities
-3. Use template variables like {{input_name}} or {{step_id.output_key}} for dynamic inputs
-4. Return ONLY the JSON object, no additional text or markdown
-5. The workflow must be a valid DAG — no cycles allowed
-6. All step_ids must be unique
-7. All referenced next step_ids must exist in the workflow
+3. Match activity inputs/outputs exactly as defined in the activity metadata
+4. Use template variables like {{input_name}} or {{step_id.output_name}} for dynamic inputs
+5. NEVER use {{step_id.outputs.output_name}} format - this is incorrect
+6. Return ONLY the JSON object, no additional text or markdown
+7. The workflow must be a valid DAG — no cycles allowed
+8. All step_ids must be unique
+9. All referenced next step_ids must exist in the workflow
+10. Ensure all activity inputs are provided (either as literals or template variables)
 """

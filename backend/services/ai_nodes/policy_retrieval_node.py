@@ -21,7 +21,8 @@ async def policy_retrieval_node(state: GraphState) -> GraphState:
     1. Takes the problem statement from the state
     2. Uses RAG to search for relevant policies in the knowledge base
     3. Formats the retrieved policies for use in workflow planning
-    4. Returns updated state with retrieved_policies
+    4. Gracefully skips if RAG service is unavailable
+    5. Returns updated state with retrieved_policies (empty if unavailable)
     
     Args:
         state: Current graph state containing problem_statement
@@ -42,6 +43,14 @@ async def policy_retrieval_node(state: GraphState) -> GraphState:
     try:
         # Get RAG client
         rag_client = get_rag_client()
+        
+        # Check if RAG client is available
+        if rag_client is None:
+            logger.warning("RAG service is not available, skipping policy retrieval")
+            new_state["retrieved_policies"] = []
+            new_state["current_step"] = "policy_retrieval_complete"
+            new_state["message"] = "Agent 1: RAG service unavailable - proceeding without policy context"
+            return new_state
         
         # Create search request with optimized parameters for policy retrieval
         search_request = RAGSearchRequest(
@@ -73,11 +82,21 @@ async def policy_retrieval_node(state: GraphState) -> GraphState:
         # Update state with retrieved policies
         new_state["retrieved_policies"] = retrieved_policies
         new_state["current_step"] = "policy_retrieval_complete"
-        new_state["message"] = f"Agent 1: Retrieved {len(retrieved_policies)} relevant policies from knowledge base"
+        
+        if len(retrieved_policies) > 0:
+            new_state["message"] = f"Agent 1: Retrieved {len(retrieved_policies)} relevant policies from knowledge base"
+        else:
+            new_state["message"] = "Agent 1: No relevant policies found - proceeding with general workflow generation"
         
         return new_state
         
     except Exception as e:
-        logger.error(f"Error retrieving policies: {str(e)}")
-        new_state["error"] = f"Policy retrieval failed: {str(e)}"
+        # Log the error but don't fail the entire workflow
+        logger.warning(f"Policy retrieval failed, continuing without policies: {str(e)}")
+        
+        # Continue with empty policies instead of failing
+        new_state["retrieved_policies"] = []
+        new_state["current_step"] = "policy_retrieval_complete"
+        new_state["message"] = f"Agent 1: Policy retrieval unavailable ({str(e)[:50]}...) - proceeding without policy context"
+        
         return new_state
