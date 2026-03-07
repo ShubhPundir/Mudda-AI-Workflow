@@ -48,17 +48,7 @@ async def send_notification(input: SendNotificationInput) -> SendNotificationOut
     # Generate email subject and body using LLM
     activity.logger.info("Generating email content via LLM")
     
-    prompt = f"""Generate a professional email with subject and body.
-
-Content description: {input.content}
-
-Issue ID: {input.issue_id}
-
-Format your response as:
-SUBJECT: [email subject here]
-BODY: [email body here]"""
-
-    llm_response = await _llm_service.generate_report({"problem_statement": prompt})
+    llm_response = await _llm_service.generate_email(input)
     
     # Parse LLM response to extract subject and body
     subject = ""

@@ -40,7 +40,7 @@ class GeminiLLMAdapter(LLMInterface):
             model='gemini-3-flash',
             contents=content
         )
-        return response
+        return response.text if hasattr(response, "text") else str(response)
 
     async def generate_structured(
         self, 
@@ -102,30 +102,3 @@ class GeminiLLMAdapter(LLMInterface):
             logger.error("Structured generation failed: %s", exc)
             raise RuntimeError(f"Structured output generation failed: {exc}") from exc
 
-    async def generate_report(self, inputs: Dict[str, Any]) -> str:
-        problem = inputs.get("problem_statement", "")
-        context = inputs.get("context", {})
-        report_type = inputs.get("report_type", "summary")
-
-        # TODO: this method must be use-case agnostic, perhaps keep this in interface
-
-        prompt = (
-            f"Generate a {report_type} report for the following civic issue:\n\n"
-            f"Issue: {problem}\n\n"
-        )
-        if context:
-            prompt += f"Additional context:\n{context}\n\n"
-        prompt += (
-            "Provide a clear, structured report with findings, "
-            "recommendations, and next steps."
-        )
-
-        logger.info("LLM report generation via Gemini — type=%s", report_type)
-
-        try:
-            response = await self.generate_async(prompt)
-            report_text = response.text if hasattr(response, "text") else str(response)
-            return report_text
-        except Exception as exc:
-            logger.error("LLM generation failed: %s", exc)
-            raise RuntimeError(f"LLM report generation failed: {exc}") from exc

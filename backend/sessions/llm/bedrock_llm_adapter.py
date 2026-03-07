@@ -110,34 +110,3 @@ User request:
         except Exception:
             logger.exception("Bedrock Structured generation failed")
             raise RuntimeError("Structured output generation failed")
-
-    # -------------------------
-    # Civic report generation
-    # -------------------------
-    async def generate_report(self, inputs: Dict[str, Any]) -> str:
-
-        problem = inputs.get("content", "")
-        context = inputs.get("context", {})
-        report_type = inputs.get("report_type", "summary")
-
-        prompt = (
-            f"Generate a {report_type} report for the following civic issue:\n\n"
-            f"Issue: {problem}\n\n"
-        )
-
-        if context:
-            prompt += f"Additional context:\n{context}\n\n"
-
-        prompt += (
-            "Provide a clear, structured report with findings, "
-            "recommendations, and next steps."
-        )
-
-        logger.info("LLM report generation via Bedrock — type=%s", report_type)
-
-        try:
-            return await self.generate_async(prompt)
-
-        except Exception:
-            logger.exception("LLM report generation failed")
-            raise RuntimeError("LLM report generation failed")

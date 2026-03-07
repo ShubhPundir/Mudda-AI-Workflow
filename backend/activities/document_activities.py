@@ -32,12 +32,11 @@ async def pdf_service_activity(input: PDFServiceInput) -> PDFServiceOutput:
     logger.info("pdf_service_activity — step_id=%s", input.step_id)
 
     # Step 1: Generate text via LLM with enhanced context
-    report_text = await _llm_service.generate_report(input.model_dump())
+    report_text = await _llm_service.generate_report(input)
 
     # Step 2: Generate PDF
-    effective_text = input.effective_content
     metadata = {
-        "title": input.title or f"Report - {effective_text[:50]}",
+        "title": input.title or f"Report - {input.content[:50]}",
         "report_type": input.report_type,
         "step_id": input.step_id,
     }

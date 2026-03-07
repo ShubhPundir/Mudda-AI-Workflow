@@ -38,23 +38,9 @@ async def update_issue_activity(input: UpdateIssueInput) -> UpdateIssueOutput:
     )
 
     try:
-        # Generate intelligent status summary using LLM
-        # prompt = f"Generate a concise status update summary for issue {input.issue_id} with new status: {input.status}"
-        # logger.info("Generating LLM-enhanced status summary")
-        # status_summary = await _llm_service.generate_report({"problem_statement": prompt})
-        
         # Call service to perform update
         result = await update_issue(input.issue_id, input.status)
-        
 
-        # TODO: commenting LLM enhancement, all of this must be given to the logging system, not to the issue table
-        # TODO: make 1. LLM append only logging --> messages, sources (from and to), issue_id, track flow, 
-        # TODO: make 2. make 
-        # Enhance result with LLM-generated summary for downstream activities
-        # enhanced_result = result.copy() if isinstance(result, dict) else {"raw_result": result}
-        # enhanced_result["llm_summary"] = status_summary
-        # enhanced_result["next_step_recommendation"] = f"Issue {input.issue_id} updated to {input.status}"
-        
         return UpdateIssueOutput(
             step_id=input.step_id,
             issue_id=input.issue_id,
@@ -67,6 +53,7 @@ async def update_issue_activity(input: UpdateIssueInput) -> UpdateIssueOutput:
 
 
 # NOTE: keeping it now for backward's compatibility
+# TODO: remove this activity, not to be used
 @activity.defn
 async def fetch_issue_details_activity(input: FetchIssueDetailsInput) -> FetchIssueDetailsOutput:
     """
@@ -90,7 +77,8 @@ async def fetch_issue_details_activity(input: FetchIssueDetailsInput) -> FetchIs
         # Use LLM to analyze issue details and prepare data for downstream activities
         prompt = f"Analyze this issue and extract key information for workflow processing: {details}"
         logger.info("Generating LLM-powered issue analysis")
-        analysis = await _llm_service.generate_report({"problem_statement": prompt})
+        analysis = await _llm_service.generate_async(prompt)
+        # this will give out an error due to type enforcing
         
         # Enhance details with LLM analysis
         enhanced_details = details.copy() if isinstance(details, dict) else {"raw_details": details}

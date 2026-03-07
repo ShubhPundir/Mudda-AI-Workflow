@@ -21,11 +21,6 @@ class PDFServiceInput(BaseModel):
     title: Optional[str] = Field(default=None, description="Report title")
     report_type: Optional[str] = Field(default="summary", description="Type of report to generate")
     
-    @property
-    def effective_content(self) -> str:
-        """Helper to get either content or problem_statement."""
-        return self.content or self.problem_statement or "No content provided"
-    
     model_config = {
         "json_schema_extra": {
             "example": {
