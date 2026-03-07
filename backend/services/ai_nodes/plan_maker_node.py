@@ -57,6 +57,9 @@ async def plan_maker_node(state: GraphState) -> GraphState:
 Problem Statement: {problem_statement}
 {policies_context}
 
+Issue Details (Reference for static values):
+{json.dumps(state.get("issue_details", {}), indent=2)}
+
 Selected Activities:
 {json.dumps(activities_dict, indent=2)}
 

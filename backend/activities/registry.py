@@ -39,9 +39,9 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
     "pdf_service_activity": {
         "id": "pdf_service_activity",
         "name": "Generate PDF Report",
-        "description": "Generates a PDF report using AI content and local templates, then uploads to S3 with intelligent executive summary for downstream activities.",
+        "description": "Generates a PDF report using AI content and local templates, then uploads to S3 for secure access and distribution.",
         "inputs": ["content", "template_id"],
-        "outputs": ["report_url", "executive_summary", "key_findings"]
+        "outputs": ["s3_url", "file_path", "filename"]
     },
     "update_issue_activity": {
         "id": "update_issue_activity",

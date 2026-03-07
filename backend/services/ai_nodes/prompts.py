@@ -110,60 +110,59 @@ You MUST respond with a JSON object matching this exact structure:
 3. The "outputs" field should list the output names from the activity metadata
 4. Outputs from one step can be used as inputs in subsequent steps
 
-### TEMPLATE VARIABLE RULES:
-1. To reference a previous step's output, use: {{step_id.output_name}}
-   - CORRECT: {{step2_contact_plumber.booking_id}}
-   - WRONG: {{step2_contact_plumber.outputs.booking_id}}
-   - Do NOT include ".outputs." in the reference
-   - IMPORTANT: You can ONLY reference outputs, not inputs. If step1 has location as INPUT, you cannot use {{step1.location}}
-   
-2. To reference workflow inputs and issue details, use: {{input_name}}
-   - Examples: {{problem_statement}}, {{issue_id}}, {{location}}, {{description}}, {{title}}
-   - The following are always available from issue_details:
-     * {{issue_id}} - The issue identifier
-     * {{location}} - The issue location (formatted address string)
-     * {{description}} - The issue description
-     * {{title}} - The issue title
-     * {{issue_category}} - The issue category
-   
-3. Each step declares its outputs in the "outputs" array as simple strings
-   - Example: "outputs": ["booking_id", "confirmation_number"]
-   - These MUST match the activity's output names from metadata
-   - You can ONLY reference these outputs in subsequent steps, not the inputs
+### DYNAMIC INPUT RULES:
+1. **Actual Issue Details**: You MUST replace placeholders with actual values from the provided "Problem Statement" and "Issue Details":
+   - Use the REAL `issue_id` (e.g., "ISSUE-123"), NOT `{{issue_id}}`.
+   - Use the REAL `location` (e.g., "Main St"), NOT `{{location}}`.
+   - Use the REAL `description`, `title`, and `issue_category` values.
+   - These are static values known at planning time.
+
+2. **Run-time Step Outputs**: You MUST use the template format `{{step_id.output_name}}` ONLY for values that are generated DURING workflow execution:
+   - Example: `{{step1_dispatch.worker_id}}` or `{{step2_report.s3_url}}`.
+   - Do NOT include ".outputs." in the reference.
+   - CORRECT: `{{step_id.output_name}}`
+   - WRONG: `{{step_id.outputs.output_name}}`
 
 ### EXAMPLE WORKFLOW:
 {
   "workflow_name": "plumber_dispatch",
-  "description": "Dispatch plumber and generate report",
+  "description": "Dispatch plumber to resolve water leak",
   "steps": [
     {
-      "step_id": "step1_fetch_details",
-      "activity_id": "fetch_issue_details_activity",
-      "description": "Get issue details from database",
-      "inputs": { "issue_id": "{{issue_id}}" },
-      "outputs": ["issue_details", "citizen_name", "location", "issue_type"],
-      "next": ["step2_contact_plumber"]
-    },
-    {
-      "step_id": "step2_contact_plumber",
-      "activity_id": "contact_plumber",
-      "description": "Contact plumber service",
+      "step_id": "step1_dispatch_worker",
+      "activity_id": "dispatch_worker_activity",
+      "description": "Dispatch plumber for leak at 123 Aqua Way",
       "inputs": { 
-        "issue_id": "{{issue_id}}", 
-        "dispatch_text": "{{step1_fetch_details.issue_details}}"
+        "worker_type": "plumber",
+        "issue_id": "ISSUE-999", 
+        "location": "123 Aqua Way",
+        "urgency": "high",
+        "description": "Major water pipe burst reported"
       },
-      "outputs": ["booking_id", "estimated_arrival"],
-      "next": ["step3_generate_pdf"]
+      "outputs": ["dispatch_id", "status", "worker_name", "estimated_arrival"],
+      "next": ["step2_request_photos"]
     },
     {
-      "step_id": "step3_generate_pdf",
+      "step_id": "step2_request_photos",
+      "activity_id": "request_site_photos_activity",
+      "description": "Request site photos from worker",
+      "inputs": {
+        "dispatch_id": "{{step1_dispatch_worker.dispatch_id}}",
+        "message": "Please take photos of the leak and the repair"
+      },
+      "outputs": ["request_id", "status", "photo_urls"],
+      "next": ["step3_generate_report"]
+    },
+    {
+      "step_id": "step3_generate_report",
       "activity_id": "pdf_service_activity",
-      "description": "Generate dispatch report",
+      "description": "Generate work completion report",
       "inputs": { 
-        "content": "Booking ID: {{step2_contact_plumber.booking_id}}, ETA: {{step2_contact_plumber.estimated_arrival}}",
-        "template_id": "dispatch_report"
+        "content": "Plumber {{step1_dispatch_worker.worker_name}} resolved leak at 123 Aqua Way. Photos: {{step2_request_photos.photo_urls}}",
+        "template_id": "work_report",
+        "title": "Repair Report - ISSUE-999"
       },
-      "outputs": ["report_url", "executive_summary", "key_findings"],
+      "outputs": ["s3_url"],
       "next": []
     }
   ]
