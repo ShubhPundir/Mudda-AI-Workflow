@@ -95,7 +95,7 @@ class WorkflowGenerationResponse(BaseModel):
 
 class WorkflowExecutionRequest(BaseModel):
     """Request schema for executing a workflow"""
-    workflow_plan_id: str
+    workflow_plan_id: Optional[str] = None
     execution_data: Optional[Dict[str, Any]] = None
 
 

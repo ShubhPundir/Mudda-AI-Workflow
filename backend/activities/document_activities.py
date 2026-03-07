@@ -35,8 +35,9 @@ async def pdf_service_activity(input: PDFServiceInput) -> PDFServiceOutput:
     report_text = await _llm_service.generate_report(input.model_dump())
 
     # Step 2: Generate PDF
+    effective_text = input.effective_content
     metadata = {
-        "title": input.title or f"Report — {input.problem_statement[:50]}",
+        "title": input.title or f"Report - {effective_text[:50]}",
         "report_type": input.report_type,
         "step_id": input.step_id,
     }

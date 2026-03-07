@@ -54,7 +54,7 @@ class Settings:
     API_PORT: int = int(os.getenv("API_PORT", "8081"))
 
     # CORS
-    CORS_ORIGINS: list = ["*"]
+    CORS_ORIGINS: list = ["http://localhost:3000", "https://mudda.dev"]
 
     # RAG Service
     RAG_SERVICE_URL: str = os.getenv("RAG_SERVICE_URL", "http://localhost:8082")

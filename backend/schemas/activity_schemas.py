@@ -12,15 +12,22 @@ from pydantic import BaseModel, Field, field_validator
 # Document Activities
 # ============================================================================
 
+# TODO: keeping problem_statement for backward's compatibility, remove in 0.4.x
 class PDFServiceInput(BaseModel):
     """Input schema for pdf_service_activity."""
     step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    problem_statement: str = Field(..., description="Problem statement for report generation")
-    title: Optional[str] = Field(None, description="Report title")
+    problem_statement: Optional[str] = Field(default=None, description="Problem statement for report generation")
+    content: Optional[str] = Field(default=None, description="Report content/prompt (alias for problem_statement)")
+    title: Optional[str] = Field(default=None, description="Report title")
     report_type: Optional[str] = Field(default="summary", description="Type of report to generate")
     
-    class Config:
-        json_schema_extra = {
+    @property
+    def effective_content(self) -> str:
+        """Helper to get either content or problem_statement."""
+        return self.content or self.problem_statement or "No content provided"
+    
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "step_id": "step_001",
                 "problem_statement": "Water leak at Main Street",
@@ -28,6 +35,7 @@ class PDFServiceInput(BaseModel):
                 "report_type": "summary"
             }
         }
+    }
 
 
 class PDFServiceOutput(BaseModel):
@@ -50,6 +58,9 @@ class UpdateExecutionStatusInput(BaseModel):
     execution_id: str = Field(..., description="Workflow execution ID")
     status: str = Field(..., description="New execution status")
     result_data: Optional[Dict[str, Any]] = Field(None, description="Optional result or error data")
+    event_type: Optional[str] = Field(None, description="Type of SSE event to emit")
+    step_id: Optional[str] = Field(None, description="Optional step identifier for the event")
+    step_name: Optional[str] = Field(None, description="Optional step name for the event")
     
     @field_validator('status')
     @classmethod

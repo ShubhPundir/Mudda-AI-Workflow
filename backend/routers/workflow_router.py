@@ -10,8 +10,6 @@ from services.workflow_service import WorkflowService
 from schemas import (
     IssueDetailsRequest,
     WorkflowGenerationResponse,
-    WorkflowExecutionRequest,
-    WorkflowExecutionResponse,
     WorkflowPlanSchema
 )
 from typing import List
@@ -164,66 +162,3 @@ async def list_workflows(
         )
 
 
-@router.post("/{workflow_id}/execute", response_model=WorkflowExecutionResponse)
-async def execute_workflow(
-    workflow_id: str,
-    request: WorkflowExecutionRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Execute a workflow plan
-    
-    Args:
-        workflow_id: UUID of the workflow plan to execute
-        request: Execution parameters
-        db: Database session
-        
-    Returns:
-        Execution details
-    """
-    try:
-        return await WorkflowService.execute_workflow(db, workflow_id, request.execution_data)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to execute workflow: {str(e)}"
-        )
-
-
-@router.get("/executions/{execution_id}")
-async def get_execution(
-    execution_id: str,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get workflow execution details
-    
-    Args:
-        execution_id: UUID of the execution
-        db: Database session
-        
-    Returns:
-        Execution details
-    """
-    try:
-        execution = await WorkflowService.get_execution(db, execution_id)
-        
-        if not execution:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Execution not found"
-            )
-        
-        return execution
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get execution: {str(e)}"
-        )

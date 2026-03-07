@@ -121,6 +121,11 @@ class MuddaWorkflow:
             args=[{
                 "execution_id": execution_id,
                 "status": "running",
+                "event_type": "execution_started",
+                "result_data": {
+                    "workflow_name": workflow_plan.get("workflow_name", "Unknown"),
+                    "total_steps": len(workflow_plan.get("steps", []))
+                }
             }],
             start_to_close_timeout=timedelta(seconds=30),
             retry_policy=retry,
@@ -129,9 +134,10 @@ class MuddaWorkflow:
         steps = workflow_plan.get("steps", [])
 
         # ── Execute steps sequentially (DAG order) ───────────────────
-        for step in steps:
+        for index, step in enumerate(steps):
             step_id: str = step["step_id"]
             activity_id: str = step["activity_id"]
+            description: str = step.get("description", "No description")
             inputs: Dict[str, Any] = step.get("inputs", {})
             requires_approval: bool = step.get("requires_approval", False)
 
@@ -142,11 +148,45 @@ class MuddaWorkflow:
                 requires_approval,
             )
 
+            # ── Emit Step Started Event ──────────────────────────────
+            await workflow.execute_activity(
+                update_execution_status,
+                args=[{
+                    "execution_id": execution_id,
+                    "status": "running",
+                    "event_type": "step_started",
+                    "step_id": step_id,
+                    "step_name": description,
+                    "result_data": {
+                        "activity_id": activity_id,
+                        "step_index": index,
+                        "total_steps": len(steps)
+                    }
+                }],
+                start_to_close_timeout=timedelta(seconds=30),
+                retry_policy=retry,
+            )
+
             # ── Human approval (signal-based) ────────────────────────
             if requires_approval:
                 workflow.logger.info(
                     "Waiting for approval signal — step_id=%s", step_id
                 )
+                
+                # Emit Awaiting Approval Event
+                await workflow.execute_activity(
+                    update_execution_status,
+                    args=[{
+                        "execution_id": execution_id,
+                        "status": "running",
+                        "event_type": "awaiting_approval",
+                        "step_id": step_id,
+                        "step_name": description
+                    }],
+                    start_to_close_timeout=timedelta(seconds=30),
+                    retry_policy=retry,
+                )
+
                 await workflow.wait_condition(
                     lambda sid=step_id: self.approved_steps.get(sid, False)
                 )
@@ -159,8 +199,11 @@ class MuddaWorkflow:
                     raise ValueError(f"Activity '{activity_id}' not found in registry")
 
                 # Resolve template variables in inputs (very basic version)
-                # In production, this would be more robust
                 resolved_inputs = self._resolve_templates(inputs)
+                
+                # Ensure step_id is passed to the activity
+                if isinstance(resolved_inputs, dict) and "step_id" not in resolved_inputs:
+                    resolved_inputs["step_id"] = step_id
 
                 result = await workflow.execute_activity(
                     activity_handler,
@@ -176,6 +219,21 @@ class MuddaWorkflow:
                 if isinstance(result, dict) and "ai_metadata" in result:
                     self.ai_context[step_id] = result["ai_metadata"]
 
+                # Emit Step Completed Event
+                await workflow.execute_activity(
+                    update_execution_status,
+                    args=[{
+                        "execution_id": execution_id,
+                        "status": "running",
+                        "event_type": "step_completed",
+                        "step_id": step_id,
+                        "step_name": description,
+                        "result_data": result
+                    }],
+                    start_to_close_timeout=timedelta(seconds=30),
+                    retry_policy=retry,
+                )
+
                 workflow.logger.info(
                     "Step completed — step_id=%s activity=%s",
                     step_id,
@@ -187,12 +245,15 @@ class MuddaWorkflow:
                     "Step failed — step_id=%s error=%s", step_id, exc
                 )
 
-                # Record failure in DB
+                # Record failure in DB and emit Step Failed Event
                 await workflow.execute_activity(
                     update_execution_status,
                     args=[{
                         "execution_id": execution_id,
                         "status": "failed",
+                        "event_type": "step_failed",
+                        "step_id": step_id,
+                        "step_name": description,
                         "result_data": {
                             "failed_step": step_id,
                             "error": str(exc),
@@ -216,6 +277,7 @@ class MuddaWorkflow:
             args=[{
                 "execution_id": execution_id,
                 "status": "completed",
+                "event_type": "execution_completed",
                 "result_data": self.execution_results,
             }],
             start_to_close_timeout=timedelta(seconds=30),

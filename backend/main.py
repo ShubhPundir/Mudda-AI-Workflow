@@ -8,7 +8,7 @@ from config import settings
 from sessions.database import engine
 from models import Base
 from sqlalchemy import text
-from routers import workflow_router, workflow_stream_router, health_router, activity_router, document_router
+from routers import workflow_router, workflow_execution_router, workflow_stream_router, health_router, activity_router, document_router
 
 # Create database tables
 # Base.metadata.create_all(bind=engine)
@@ -52,6 +52,7 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(activity_router)
 app.include_router(workflow_router)
+app.include_router(workflow_execution_router)
 app.include_router(workflow_stream_router)
 app.include_router(document_router)
 

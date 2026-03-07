@@ -19,3 +19,5 @@ __pycache__/
 *.pyzwzwz
 
 .pytest_cache
+
+generated_reports/*

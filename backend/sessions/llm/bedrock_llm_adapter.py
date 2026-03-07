@@ -116,7 +116,7 @@ User request:
     # -------------------------
     async def generate_report(self, inputs: Dict[str, Any]) -> str:
 
-        problem = inputs.get("problem_statement", "")
+        problem = inputs.get("content", "")
         context = inputs.get("context", {})
         report_type = inputs.get("report_type", "summary")
 
