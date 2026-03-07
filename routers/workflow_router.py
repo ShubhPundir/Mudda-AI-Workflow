@@ -1,0 +1,164 @@
+"""
+Workflow management router
+"""
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Dict, Any
+
+from sessions.database import get_db
+from services.workflow_service import WorkflowService
+from schemas import (
+    IssueDetailsRequest,
+    WorkflowGenerationResponse,
+    WorkflowPlanSchema
+)
+from typing import List
+
+router = APIRouter(prefix="/workflows", tags=["workflows"])
+
+
+@router.post("/generate", response_model=WorkflowGenerationResponse)
+async def generate_workflow(
+    request: IssueDetailsRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate a workflow plan from structured issue details
+    
+    Args:
+        request: Structured issue details including ID, category, location, etc.
+        db: Database session
+        
+    Returns:
+        Generated workflow plan with ID
+        
+    Example:
+        {
+            "issue_id": 1709812200000,
+            "issue_category": "INFRASTRUCTURE",
+            "created_at": "2024-03-07T10:30:00.000Z",
+            "description": "Major water pipe burst causing severe flooding on MG Road",
+            "location": {
+                "address_line": "42 MG Road, Sector 14",
+                "city": "Gurugram",
+                "state": "Haryana",
+                "pin_code": "122001",
+                "coordinate": {
+                    "latitude": 28.4595,
+                    "longitude": 77.0266
+                }
+            },
+            "media_urls": ["https://example.com/photo1.jpg"],
+            "title": "Emergency: Water Pipe Burst"
+        }
+    """
+    try:
+        return await WorkflowService.generate_workflow(db, request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate workflow: {str(e)}"
+        )
+
+
+@router.get("/{workflow_id}", response_model=WorkflowGenerationResponse)
+async def get_workflow(
+    workflow_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get a specific workflow plan by ID
+    
+    Args:
+        workflow_id: UUID of the workflow plan
+        db: Database session
+        
+    Returns:
+        Workflow plan details
+    """
+    try:
+        workflow = await WorkflowService.get_workflow(db, workflow_id)
+        
+        if not workflow:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Workflow plan not found"
+            )
+        
+        return workflow
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get workflow: {str(e)}"
+        )
+
+
+@router.put("/{workflow_id}", response_model=WorkflowGenerationResponse)
+async def update_workflow(
+    workflow_id: str,
+    workflow_plan: WorkflowPlanSchema,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update a workflow plan
+    
+    Args:
+        workflow_id: UUID of the workflow plan
+        workflow_plan: New workflow plan data
+        db: Database session
+        
+    Returns:
+        Updated workflow plan details
+    """
+    try:
+        updated_workflow = await WorkflowService.update_workflow(db, workflow_id, workflow_plan)
+        
+        if not updated_workflow:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Workflow plan not found"
+            )
+            
+        return updated_workflow
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update workflow: {str(e)}"
+        )
+
+
+@router.get("", response_model=List[WorkflowGenerationResponse])
+async def list_workflows(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List all workflow plans
+    
+    Args:
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        db: Database session
+        
+    Returns:
+        List of workflow plans
+    """
+    try:
+        return await WorkflowService.list_workflows(db, skip, limit)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list workflows: {str(e)}"
+        )
+
+
