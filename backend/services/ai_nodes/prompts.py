@@ -115,13 +115,21 @@ You MUST respond with a JSON object matching this exact structure:
    - CORRECT: {{step2_contact_plumber.booking_id}}
    - WRONG: {{step2_contact_plumber.outputs.booking_id}}
    - Do NOT include ".outputs." in the reference
+   - IMPORTANT: You can ONLY reference outputs, not inputs. If step1 has location as INPUT, you cannot use {{step1.location}}
    
-2. To reference workflow inputs, use: {{input_name}}
-   - Examples: {{problem_statement}}, {{issue_id}}, {{citizen_id}}
+2. To reference workflow inputs and issue details, use: {{input_name}}
+   - Examples: {{problem_statement}}, {{issue_id}}, {{location}}, {{description}}, {{title}}
+   - The following are always available from issue_details:
+     * {{issue_id}} - The issue identifier
+     * {{location}} - The issue location (formatted address string)
+     * {{description}} - The issue description
+     * {{title}} - The issue title
+     * {{issue_category}} - The issue category
    
 3. Each step declares its outputs in the "outputs" array as simple strings
    - Example: "outputs": ["booking_id", "confirmation_number"]
    - These MUST match the activity's output names from metadata
+   - You can ONLY reference these outputs in subsequent steps, not the inputs
 
 ### EXAMPLE WORKFLOW:
 {

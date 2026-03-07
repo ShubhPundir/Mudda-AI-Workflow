@@ -9,7 +9,7 @@ from schemas import (
     WorkflowPlanSchema, 
     WorkflowGenerationResponse, 
     WorkflowExecutionResponse,
-    ProblemStatementRequest
+    IssueDetailsRequest
 )
 from services.ai_service import ai_service
 from datetime import datetime
@@ -19,26 +19,43 @@ class WorkflowService:
     """Service class for Workflow operations"""
     
     @staticmethod
-    async def generate_workflow(db: AsyncSession, request: ProblemStatementRequest) -> WorkflowGenerationResponse:
+    async def generate_workflow(
+        db: AsyncSession, 
+        request: IssueDetailsRequest
+    ) -> WorkflowGenerationResponse:
         """
         Generate a workflow plan for a civic issue
         
         Args:
             db: Database session
-            request: Problem statement describing the civic issue
+            request: Structured issue details (IssueDetailsRequest)
             
         Returns:
             Generated workflow plan with ID
         """
         try:
-            # Generate the workflow plan using AI
-            workflow_json = await ai_service.generate_workflow_plan(request.problem_statement)
+            # Convert LocationDetails to dict for AI service
+            location_dict = request.location.dict() if hasattr(request.location, 'dict') else request.location
+            
+            issue_details = {
+                "issue_id": request.issue_id,
+                "issue_category": request.issue_category,
+                "created_at": request.created_at,
+                "description": request.description,
+                "location": location_dict,
+                "media_urls": request.media_urls,
+                "title": request.title
+            }
+            
+            # Generate workflow using AI service
+            workflow_json = await ai_service.generate_workflow_plan(issue_details=issue_details)
+            issue_id = str(request.issue_id)  # Convert to string for database
             
             # Save to database
             workflow_plan = WorkflowPlan(
                 name=workflow_json["workflow_name"],
                 description=workflow_json["description"],
-                issue_id=None,  # Can be set later when issue is created
+                issue_id=issue_id,  # Set from IssueDetailsRequest if provided
                 plan_json=workflow_json,
                 ai_model_used="gemini-2.5-flash",
                 status="DRAFT",
@@ -205,6 +222,11 @@ class WorkflowService:
         if not workflow_plan_json:
             raise ValueError("Workflow plan has no steps defined")
         
+        # Extract issue_details from execution_data if available
+        issue_details = None
+        if execution_data and isinstance(execution_data, dict):
+            issue_details = execution_data.get("issue_details")
+        
         # Start Temporal workflow execution
         from temporal.client import temporal_client_manager
         
@@ -212,7 +234,8 @@ class WorkflowService:
             # Connect to Temporal and start workflow
             temporal_workflow_id = await temporal_client_manager.execute_workflow(
                 workflow_plan=workflow_plan_json,
-                execution_id=str(execution.id)  # Pass execution UUID
+                execution_id=str(execution.id),  # Pass execution UUID
+                issue_details=issue_details  # Pass issue details for template resolution
             )
             
             # Update execution record with Temporal workflow ID

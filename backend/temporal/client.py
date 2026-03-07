@@ -77,6 +77,7 @@ class TemporalClientManager:
         self,
         workflow_plan: Dict[str, Any],
         execution_id: str,
+        issue_details: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Start execution of a workflow plan.
@@ -84,6 +85,7 @@ class TemporalClientManager:
         Args:
             workflow_plan: The workflow plan dict (must contain 'steps').
             execution_id: ID of the WorkflowExecution DB record.
+            issue_details: Optional issue details for template resolution.
 
         Returns:
             Temporal workflow ID string.
@@ -95,7 +97,7 @@ class TemporalClientManager:
 
         handle = await self.client.start_workflow(
             MuddaWorkflow.run,
-            args=[workflow_plan, execution_id],
+            args=[workflow_plan, execution_id, issue_details],
             id=f"mudda-workflow-{execution_id}",
             task_queue=TASK_QUEUE,
         )

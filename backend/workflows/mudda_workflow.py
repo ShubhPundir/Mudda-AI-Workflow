@@ -37,10 +37,11 @@ class MuddaWorkflow:
     across the lifetime of a single workflow execution.
     """
 
-    def __init__(self) -> True:
+    def __init__(self) -> None:
         self.execution_results: Dict[str, Any] = {}
         self.ai_context: Dict[str, Any] = {}
         self.approved_steps: Dict[str, bool] = {}
+        self.workflow_inputs: Dict[str, Any] = {}  # Store workflow-level inputs
 
     # ------------------------------------------------------------------
     # Signals
@@ -70,7 +71,7 @@ class MuddaWorkflow:
     # ------------------------------------------------------------------
     @workflow.run
     async def run(
-        self, workflow_plan: Dict[str, Any], execution_id: str
+        self, workflow_plan: Dict[str, Any], execution_id: str, issue_details: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
         Execute a complete workflow plan composed of activities.
@@ -78,6 +79,7 @@ class MuddaWorkflow:
         Args:
             workflow_plan: The workflow plan to execute (contains 'steps' list).
             execution_id: ID of the WorkflowExecution record in the database.
+            issue_details: Optional issue details for template resolution (issue_id, location, etc.)
 
         Returns:
             Final structured result with status and all step results.
@@ -87,6 +89,23 @@ class MuddaWorkflow:
             execution_id,
             workflow_plan.get("workflow_name", "Unknown"),
         )
+        
+        # Store workflow inputs for template resolution
+        if issue_details:
+            self.workflow_inputs = issue_details.copy()
+            # Format location as a string if it's a dict
+            if isinstance(issue_details.get("location"), dict):
+                loc = issue_details["location"]
+                location_parts = []
+                if loc.get("address_line") and loc["address_line"] != "Not specified":
+                    location_parts.append(loc["address_line"])
+                if loc.get("city") and loc["city"] != "Not specified":
+                    location_parts.append(loc["city"])
+                if loc.get("state") and loc["state"] != "Not specified":
+                    location_parts.append(loc["state"])
+                if loc.get("pin_code") and loc["pin_code"] != "000000":
+                    location_parts.append(loc["pin_code"])
+                self.workflow_inputs["location"] = ", ".join(location_parts) if location_parts else "Location not specified"
 
         # Retry policy shared by all activity calls
         retry = RetryPolicy(
@@ -216,12 +235,14 @@ class MuddaWorkflow:
         """
         Basic template resolver for activity inputs.
         Supports {{step_id.output_key}} or generic {{key}}.
+        Also supports workflow-level inputs like {{issue_id}}, {{location}}, etc.
         """
         resolved = {}
         for k, v in inputs.items():
             if isinstance(v, str) and v.startswith("{{") and v.endswith("}}"):
                 path = v[2:-2].strip()
                 if "." in path:
+                    # Reference to a previous step's output: {{step_id.output_key}}
                     step_id, key = path.split(".", 1)
                     step_result = self.execution_results.get(step_id, {})
                     if isinstance(step_result, dict):
@@ -229,16 +250,19 @@ class MuddaWorkflow:
                     else:
                         resolved[k] = v
                 else:
-                    # Generic input from elsewhere or root level (e.g., issue_id)
-                    # For now, searching in all results or keeping as is
-                    found = False
-                    for result in self.execution_results.values():
-                        if isinstance(result, dict) and path in result:
-                            resolved[k] = result[path]
-                            found = True
-                            break
-                    if not found:
-                        resolved[k] = v
+                    # Generic input - check workflow inputs first, then step results
+                    if path in self.workflow_inputs:
+                        resolved[k] = self.workflow_inputs[path]
+                    else:
+                        # Search in all step results
+                        found = False
+                        for result in self.execution_results.values():
+                            if isinstance(result, dict) and path in result:
+                                resolved[k] = result[path]
+                                found = True
+                                break
+                        if not found:
+                            resolved[k] = v
             else:
                 resolved[k] = v
         return resolved

@@ -1,7 +1,7 @@
 """
 WorkflowPlan model for generated workflow plans
 """
-from sqlalchemy import Column, String, Text, DateTime, Boolean
+from sqlalchemy import Column, String, Text, DateTime, Boolean, BigInteger
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from .base import Base
@@ -15,7 +15,7 @@ class WorkflowPlan(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=func.gen_random_uuid())
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=False)
-    issue_id = Column(UUID(as_uuid=True), nullable=True)
+    issue_id = Column(String, nullable=True)  # Changed from UUID to String to support various ID formats
     plan_json = Column(JSONB, nullable=False)
     ai_model_used = Column(Text, nullable=True)
     status = Column(Text, nullable=True, default="DRAFT")  # draft, active, completed, failed

@@ -11,6 +11,7 @@ class GraphState(TypedDict):
     This state is passed between nodes and tracks the entire workflow execution.
     """
     problem_statement: str
+    issue_details: Dict[str, Any]  # Structured issue details (issue_id, category, location, etc.)
     retrieved_policies: List[Dict[str, Any]]  # Policies retrieved from RAG knowledge base
     selected_activity_ids: List[str]
     selected_activities: List[Dict[str, Any]]

@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from sessions.database import get_db
 from services.workflow_service import WorkflowService
 from schemas import (
-    ProblemStatementRequest,
+    IssueDetailsRequest,
     WorkflowGenerationResponse,
     WorkflowExecutionRequest,
     WorkflowExecutionResponse,
@@ -21,18 +21,38 @@ router = APIRouter(prefix="/workflows", tags=["workflows"])
 
 @router.post("/generate", response_model=WorkflowGenerationResponse)
 async def generate_workflow(
-    request: ProblemStatementRequest,
+    request: IssueDetailsRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Generate a workflow plan for a civic issue
+    Generate a workflow plan from structured issue details
     
     Args:
-        request: Problem statement describing the civic issue
+        request: Structured issue details including ID, category, location, etc.
         db: Database session
         
     Returns:
         Generated workflow plan with ID
+        
+    Example:
+        {
+            "issue_id": 1709812200000,
+            "issue_category": "INFRASTRUCTURE",
+            "created_at": "2024-03-07T10:30:00.000Z",
+            "description": "Major water pipe burst causing severe flooding on MG Road",
+            "location": {
+                "address_line": "42 MG Road, Sector 14",
+                "city": "Gurugram",
+                "state": "Haryana",
+                "pin_code": "122001",
+                "coordinate": {
+                    "latitude": 28.4595,
+                    "longitude": 77.0266
+                }
+            },
+            "media_urls": ["https://example.com/photo1.jpg"],
+            "title": "Emergency: Water Pipe Burst"
+        }
     """
     try:
         return await WorkflowService.generate_workflow(db, request)

@@ -5,26 +5,26 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict, Any
 
 from sessions.database import get_db
 from services.ai_service import ai_service
 from services.workflow_service import WorkflowService
-from schemas import ProblemStatementRequest
+from schemas import IssueDetailsRequest
 from models import WorkflowPlan
 from datetime import datetime
 
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
-# TODO: this must be transferred into workflow_service.py for logic and workflow_router.py for entry point 
-async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> AsyncGenerator[str, None]:
+
+async def generate_sse_stream(db: AsyncSession, issue_details: Dict[str, Any]) -> AsyncGenerator[str, None]:
     """
     Generate Server-Sent Events stream for workflow generation progress.
     
     Args:
         db: Database session
-        problem_statement: Problem description
+        issue_details: Structured issue details dictionary
         
     Yields:
         SSE-formatted strings
@@ -50,7 +50,7 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
             yield f"data: {json.dumps(warning_data)}\n\n"
         
         # Stream progress events from AI service
-        async for event in ai_service.generate_workflow_plan_stream(problem_statement):
+        async for event in ai_service.generate_workflow_plan_stream(issue_details=issue_details):
             event_type = event.get("event", "message")
             event_data = event.get("data", {})
             
@@ -81,7 +81,7 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
             workflow_plan = WorkflowPlan(
                 name=workflow_json["workflow_name"],
                 description=workflow_json["description"],
-                issue_id=None,
+                issue_id=str(issue_details.get("issue_id")),  # Link to issue
                 plan_json=workflow_json,
                 ai_model_used="gemini-2.5-flash",
                 status="DRAFT",
@@ -98,7 +98,8 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
                 "workflow_id": str(workflow_plan.id),
                 "workflow_name": workflow_json["workflow_name"],
                 "created_at": workflow_plan.created_at.isoformat() if workflow_plan.created_at else datetime.utcnow().isoformat(),
-                "rag_service_available": not rag_service_unavailable
+                "rag_service_available": not rag_service_unavailable,
+                "issue_id": issue_details.get("issue_id")
             }
             yield f"event: workflow_saved\n"
             yield f"data: {json.dumps(success_data)}\n\n"
@@ -119,21 +120,54 @@ async def generate_sse_stream(db: AsyncSession, problem_statement: str) -> Async
 
 @router.post("/generate/stream")
 async def generate_workflow_stream(
-    request: ProblemStatementRequest,
+    request: IssueDetailsRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
     Generate a workflow plan with streaming progress updates via SSE.
     
     Args:
-        request: Problem statement request
+        request: Structured issue details request
         db: Database session
         
     Returns:
         StreamingResponse with SSE events
+        
+    Example:
+        {
+            "issue_id": 1709812200000,
+            "issue_category": "INFRASTRUCTURE",
+            "created_at": "2024-03-07T10:30:00.000Z",
+            "description": "Major water pipe burst causing severe flooding",
+            "location": {
+                "address_line": "42 MG Road, Sector 14",
+                "city": "Gurugram",
+                "state": "Haryana",
+                "pin_code": "122001",
+                "coordinate": {
+                    "latitude": 28.4595,
+                    "longitude": 77.0266
+                }
+            },
+            "media_urls": [],
+            "title": "Emergency: Water Pipe Burst"
+        }
     """
+    # Convert request to dict for streaming
+    location_dict = request.location.dict() if hasattr(request.location, 'dict') else request.location
+    
+    issue_details = {
+        "issue_id": request.issue_id,
+        "issue_category": request.issue_category,
+        "created_at": request.created_at,
+        "description": request.description,
+        "location": location_dict,
+        "media_urls": request.media_urls,
+        "title": request.title
+    }
+    
     return StreamingResponse(
-        generate_sse_stream(db, request.problem_statement),
+        generate_sse_stream(db, issue_details),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

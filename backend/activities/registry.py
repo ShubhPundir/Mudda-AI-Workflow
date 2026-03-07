@@ -54,22 +54,22 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
         "id": "dispatch_worker_activity",
         "name": "Dispatch Worker",
         "description": "Dispatches a worker (plumber, electrician, etc.) to a specific location to resolve an issue.",
-        "inputs": ["worker_type", "issue_id", "location", "description"],
-        "outputs": ["dispatch_id", "status", "worker_notified"]
+        "inputs": ["worker_type", "issue_id", "location", "urgency", "description"],
+        "outputs": ["dispatch_id", "status", "worker_notified", "worker_name", "worker_phone", "estimated_arrival", "worker_response", "message"]
     },
     "request_site_photos_activity": {
         "id": "request_site_photos_activity",
         "name": "Request Site Photos",
         "description": "Requests photos from the dispatched worker for validation or record keeping.",
         "inputs": ["dispatch_id", "message"],
-        "outputs": ["request_id", "status"]
+        "outputs": ["request_id", "status", "photos_uploaded", "photo_urls", "worker_notes"]
     },
     "confirm_task_completion_activity": {
         "id": "confirm_task_completion_activity",
         "name": "Confirm Task Completion",
         "description": "Marks a worker dispatch task as fully completed in the system.",
         "inputs": ["dispatch_id", "notes"],
-        "outputs": ["status", "confirmed_at"]
+        "outputs": ["status", "confirmed_at", "completion_notes", "time_spent_minutes", "materials_used", "follow_up_required"]
     },
 }
 

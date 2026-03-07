@@ -59,10 +59,35 @@ class AIService:
 
         self.app = workflow.compile()
 
-    async def generate_workflow_plan(self, problem_statement: str) -> Dict[str, Any]:
-        """Generate a workflow plan using LangGraph"""
+    async def generate_workflow_plan(
+        self,
+        issue_details: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate a workflow plan using LangGraph
+        
+        Args:
+            issue_details: Structured issue details containing:
+                - issue_id: Unique identifier
+                - issue_category: Category (INFRASTRUCTURE, SANITATION, WATER)
+                - created_at: Timestamp
+                - description: Detailed description
+                - location: LocationDetails dict with coordinate
+                - media_urls: List of media URLs
+                - title: Issue title
+                
+        Returns:
+            Generated workflow plan as dictionary
+        """
+        if not issue_details:
+            raise ValueError("issue_details is required")
+        
+        # Build enriched problem statement from issue details
+        problem_text = self._build_problem_statement_from_issue(issue_details)
+        
         initial_state = {
-            "problem_statement": problem_statement,
+            "problem_statement": problem_text,
+            "issue_details": issue_details,
             "retrieved_policies": [],
             "selected_activity_ids": [],
             "selected_activities": [],
@@ -80,10 +105,97 @@ class AIService:
             
         return final_state["workflow_json"]
 
-    async def generate_workflow_plan_stream(self, problem_statement: str):
-        """Generate a workflow plan with streaming updates using LangGraph"""
+    def _build_problem_statement_from_issue(self, issue_details: Dict[str, Any]) -> str:
+        """
+        Build a comprehensive problem statement from structured issue details
+        
+        Args:
+            issue_details: Dictionary containing issue information
+            
+        Returns:
+            Formatted problem statement string
+        """
+        parts = []
+        
+        # Title and ID
+        if issue_details.get("title"):
+            parts.append(f"Issue: {issue_details['title']}")
+        if issue_details.get("issue_id"):
+            parts.append(f"(ID: {issue_details['issue_id']})")
+        
+        # Category
+        if issue_details.get("issue_category"):
+            parts.append(f"\nCategory: {issue_details['issue_category']}")
+        
+        # Location - handle nested structure
+        location = issue_details.get("location")
+        if location:
+            if isinstance(location, dict):
+                # New nested structure
+                location_parts = []
+                if location.get("address_line") and location["address_line"] != "Not specified":
+                    location_parts.append(location["address_line"])
+                if location.get("city") and location["city"] != "Not specified":
+                    location_parts.append(location["city"])
+                if location.get("state") and location["state"] != "Not specified":
+                    location_parts.append(location["state"])
+                if location.get("pin_code") and location["pin_code"] != "000000":
+                    location_parts.append(location["pin_code"])
+                
+                if location_parts:
+                    parts.append(f"\nLocation: {', '.join(location_parts)}")
+                
+                # Add coordinates if available and not default
+                coordinate = location.get("coordinate", {})
+                if isinstance(coordinate, dict):
+                    lat = coordinate.get("latitude", 0)
+                    lon = coordinate.get("longitude", 0)
+                else:
+                    # Handle Coordinate object
+                    lat = getattr(coordinate, 'latitude', 0)
+                    lon = getattr(coordinate, 'longitude', 0)
+                
+                if lat != 0 or lon != 0:
+                    parts.append(f"\nCoordinates: {lat}, {lon}")
+            else:
+                # Legacy string format
+                parts.append(f"\nLocation: {location}")
+        
+        # Description
+        if issue_details.get("description"):
+            parts.append(f"\nDescription: {issue_details['description']}")
+        
+        # Media availability
+        media_urls = issue_details.get("media_urls", [])
+        if media_urls and len(media_urls) > 0:
+            parts.append(f"\nMedia Available: {len(media_urls)} photo(s)/video(s)")
+        
+        # Timestamp
+        if issue_details.get("created_at"):
+            created_at = issue_details["created_at"]
+            parts.append(f"\nReported: {created_at}")
+        
+        return " ".join(parts)
+
+    async def generate_workflow_plan_stream(
+        self, 
+        issue_details: Dict[str, Any] = None
+    ):
+        """
+        Generate a workflow plan with streaming updates using LangGraph
+        
+        Args:
+            issue_details: Structured issue details (see generate_workflow_plan for details)
+        """
+        if not issue_details:
+            raise ValueError("issue_details is required")
+        
+        # Build enriched problem statement from issue details
+        problem_text = self._build_problem_statement_from_issue(issue_details)
+        
         initial_state = {
-            "problem_statement": problem_statement,
+            "problem_statement": problem_text,
+            "issue_details": issue_details,
             "retrieved_policies": [],
             "selected_activity_ids": [],
             "selected_activities": [],
