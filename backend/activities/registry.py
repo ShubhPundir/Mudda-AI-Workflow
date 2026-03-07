@@ -9,24 +9,33 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
     "send_notification": {
         "id": "send_notification",
         "name": "Send Notification",
-        "description": "Sends an email notification via the infrastructure layer with LLM-enhanced content generation capabilities.",
-        "inputs": ["recipient", "subject", "body"],
-        "outputs": ["success"]
+        "description": "Sends an email notification with LLM-generated subject and body based on content description.",
+        "inputs": ["to", "content"],
+        "outputs": ["message_id", "status", "to", "subject"],
+        "schema": {
+            "inputs": {
+                "step_id": "string (required)",
+                "to": "string or list[string] (required) - Recipient email(s)",
+                "content": "string (required) - What the email should communicate. LLM generates subject and body. Can use {{step_id.field}}",
+                "issue_id": "string (optional)",
+                "from_email": "string (optional)",
+                "from_name": "string (optional)"
+            }
+        },
+        "example": {
+            "step_id": "step_003_notify",
+            "activity_id": "send_notification",
+            "description": "Notify official about completion",
+            "requires_approval": False,
+            "inputs": {
+                "step_id": "step_003_notify",
+                "to": "official@city.gov",
+                "content": "Notify that repair at {{step_001_fetch_issue.location}} is complete. Report: {{step_002_generate_report.s3_url}}",
+                "issue_id": "{{issue_id}}"
+            }
+        }
     },
-    "contact_plumber": {
-        "id": "contact_plumber",
-        "name": "Contact Plumber",
-        "description": "Initiates an automated API call to the plumber dispatch system with LLM-enhanced dispatch instructions.",
-        "inputs": ["issue_id", "dispatch_text"],
-        "outputs": ["booking_id", "estimated_arrival"]
-    },
-    "await_plumber_confirmation_activity": {
-        "id": "await_plumber_confirmation_activity",
-        "name": "Await Plumber Confirmation",
-        "description": "Registers a wait state with LLM-generated follow-up instructions, expecting a manual signal from the plumber.",
-        "inputs": ["booking_id"],
-        "outputs": ["confirmation_status", "technician_notes"]
-    },
+    # TODO: add similar inputs, outputs, schemas, example for below
     "pdf_service_activity": {
         "id": "pdf_service_activity",
         "name": "Generate PDF Report",
@@ -41,26 +50,26 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
         "inputs": ["issue_id", "status", "notes"],
         "outputs": ["success", "llm_summary", "next_step_recommendation"]
     },
-    "fetch_issue_details_activity": {
-        "id": "fetch_issue_details_activity",
-        "name": "Fetch Issue Details",
-        "description": "Retrieves detailed information about an issue from the database including citizen info, location, and issue history.",
-        "inputs": ["issue_id"],
-        "outputs": ["issue_details", "citizen_name", "location", "issue_type"]
+    "dispatch_worker_activity": {
+        "id": "dispatch_worker_activity",
+        "name": "Dispatch Worker",
+        "description": "Dispatches a worker (plumber, electrician, etc.) to a specific location to resolve an issue.",
+        "inputs": ["worker_type", "issue_id", "location", "description"],
+        "outputs": ["dispatch_id", "status", "worker_notified"]
     },
-    "human_feedback_activity": {
-        "id": "human_feedback_activity",
-        "name": "Request Human Feedback",
-        "description": "Pauses execution for a required approval/input from an official with LLM-generated contextual prompts.",
-        "inputs": ["message", "options"],
-        "outputs": ["chosen_option", "comment"]
+    "request_site_photos_activity": {
+        "id": "request_site_photos_activity",
+        "name": "Request Site Photos",
+        "description": "Requests photos from the dispatched worker for validation or record keeping.",
+        "inputs": ["dispatch_id", "message"],
+        "outputs": ["request_id", "status"]
     },
-    "human_verification_activity": {
-        "id": "human_verification_activity",
-        "name": "Human Work Verification",
-        "description": "Specific human-in-the-loop verification for completed external work with LLM-assisted analysis and verification checklists.",
-        "inputs": ["work_id", "results"],
-        "outputs": ["is_verified", "verification_notes"]
+    "confirm_task_completion_activity": {
+        "id": "confirm_task_completion_activity",
+        "name": "Confirm Task Completion",
+        "description": "Marks a worker dispatch task as fully completed in the system.",
+        "inputs": ["dispatch_id", "notes"],
+        "outputs": ["status", "confirmed_at"]
     },
 }
 
@@ -71,29 +80,27 @@ def _get_activity_registry() -> Dict[str, Callable]:
     NOTE: Import directly from modules to avoid circular dependency with __init__.py
     """
     from activities.notification_activities import send_notification
-    from activities.external_service_activities import (
-        contact_plumber,
-        await_plumber_confirmation_activity
-    )
+    
     from activities.document_activities import pdf_service_activity
     from activities.issue_activities import (
         update_issue_activity,
         fetch_issue_details_activity
     )
-    from activities.human_activities import (
-        human_feedback_activity,
-        human_verification_activity
+    from activities.worker_activities import (
+        dispatch_worker_activity,
+        request_site_photos_activity,
+        confirm_task_completion_activity
     )
+    
     
     return {
         "send_notification": send_notification,
-        "contact_plumber": contact_plumber,
-        "await_plumber_confirmation_activity": await_plumber_confirmation_activity,
         "pdf_service_activity": pdf_service_activity,
         "update_issue_activity": update_issue_activity,
         "fetch_issue_details_activity": fetch_issue_details_activity,
-        "human_feedback_activity": human_feedback_activity,
-        "human_verification_activity": human_verification_activity,
+        "dispatch_worker_activity": dispatch_worker_activity,
+        "request_site_photos_activity": request_site_photos_activity,
+        "confirm_task_completion_activity": confirm_task_completion_activity,
     }
 
 

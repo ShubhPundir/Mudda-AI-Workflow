@@ -81,95 +81,104 @@ class UpdateExecutionStatusOutput(BaseModel):
 # External Service Activities
 # ============================================================================
 
-class ContactPlumberInput(BaseModel):
-    """Input schema for contact_plumber activity."""
+
+# ============================================================================
+# Worker / Dispatch Activities
+# ============================================================================
+
+class DispatchWorkerInput(BaseModel):
+    """Input schema for dispatch_worker_activity."""
     step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    issue_id: Optional[str] = Field(None, description="Related civic issue ID")
-    location: Optional[str] = Field(None, description="Service location")
-    description: Optional[str] = Field(None, description="Problem description")
-    urgency: Optional[str] = Field(default="medium", description="Urgency level")
-    
-    @field_validator('urgency')
-    @classmethod
-    def validate_urgency(cls, v: Optional[str]) -> Optional[str]:
-        """Validate urgency is one of the allowed values."""
-        if v is not None:
-            allowed = ['low', 'medium', 'high', 'critical']
-            if v not in allowed:
-                raise ValueError(f"Urgency must be one of {allowed}")
-        return v
-    
+    worker_type: str = Field(..., description="Type of worker to dispatch (e.g., plumber, electrician)")
+    issue_id: str = Field(..., description="Related civic issue ID")
+    location: str = Field(..., description="Location to dispatch the worker to")
+    urgency: str = Field(default="normal", description="Urgency of the dispatch")
+    description: str = Field(..., description="Description of the task")
+
     class Config:
         json_schema_extra = {
             "example": {
-                "step_id": "step_002",
-                "issue_id": "issue_456",
-                "location": "123 Main St",
-                "description": "Burst pipe in basement",
-                "urgency": "high"
+                "step_id": "step_001_dispatch",
+                "worker_type": "plumber",
+                "issue_id": "ISSUE-2024-00187",
+                "location": "42 MG Road, Sector 14, Gurugram",
+                "urgency": "critical",
+                "description": "Major water pipe burst"
             }
         }
 
 
-class ContactPlumberOutput(BaseModel):
-    """Output schema for contact_plumber activity."""
+class DispatchWorkerOutput(BaseModel):
+    """Output schema for dispatch_worker_activity."""
     step_id: str = Field(..., description="Workflow step identifier")
-    service: str = Field(..., description="Service type contacted")
-    result: Dict[str, Any] = Field(..., description="Service response data")
     status: str = Field(..., description="Activity completion status")
-
-
-class AwaitPlumberConfirmationInput(BaseModel):
-    """Input schema for await_plumber_confirmation_activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    timeout_seconds: Optional[int] = Field(default=3600, description="Timeout for confirmation")
-
-
-class AwaitPlumberConfirmationOutput(BaseModel):
-    """Output schema for await_plumber_confirmation_activity."""
-    status: str = Field(..., description="Waiting status")
+    dispatch_id: str = Field(..., description="Unique ID for the dispatch record")
+    worker_notified: bool = Field(..., description="Whether a worker was successfully notified")
     message: str = Field(..., description="Status message")
+    worker_name: Optional[str] = Field(None, description="Name of the assigned worker")
+    worker_phone: Optional[str] = Field(None, description="Contact number of the worker")
+    estimated_arrival: Optional[str] = Field(None, description="Estimated arrival time")
+    worker_response: Optional[str] = Field(None, description="Worker's acknowledgment message")
+
+
+class RequestSitePhotosInput(BaseModel):
+    """Input schema for request_site_photos_activity."""
+    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
+    dispatch_id: str = Field(..., description="ID of the previously created dispatch")
+    message: str = Field(default="Please upload photos of the site before and after the repair.", description="Instructions for the worker")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "step_id": "step_002_photos",
+                "dispatch_id": "disp_8901",
+                "message": "Upload high-res photos of the broken pipe."
+            }
+        }
+
+
+class RequestSitePhotosOutput(BaseModel):
+    """Output schema for request_site_photos_activity."""
+    step_id: str = Field(..., description="Workflow step identifier")
+    status: str = Field(..., description="Activity completion status")
+    request_id: str = Field(..., description="Unique ID for the photo request")
+    photos_uploaded: Optional[int] = Field(None, description="Number of photos uploaded")
+    photo_urls: Optional[list[str]] = Field(None, description="Mock S3 URLs of uploaded photos")
+    worker_notes: Optional[str] = Field(None, description="Notes from the worker about the photos")
+
+
+class ConfirmTaskCompletionInput(BaseModel):
+    """Input schema for confirm_task_completion_activity."""
+    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
+    dispatch_id: str = Field(..., description="ID of the dispatch being completed")
+    notes: Optional[str] = Field(None, description="Any closing notes from the internal system")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "step_id": "step_003_confirm",
+                "dispatch_id": "disp_8901",
+                "notes": "Worker uploaded photos and marked as done."
+            }
+        }
+
+
+class ConfirmTaskCompletionOutput(BaseModel):
+    """Output schema for confirm_task_completion_activity."""
+    step_id: str = Field(..., description="Workflow step identifier")
+    status: str = Field(..., description="Activity completion status")
+    confirmed_at: str = Field(..., description="Timestamp of confirmation")
+    completion_notes: Optional[str] = Field(None, description="Final notes from the worker")
+    time_spent_minutes: Optional[int] = Field(None, description="Time spent on the task in minutes")
+    materials_used: Optional[list[str]] = Field(None, description="List of materials used")
+    follow_up_required: Optional[bool] = Field(None, description="Whether follow-up is needed")
+
 
 
 # ============================================================================
 # Human Activities
 # ============================================================================
 
-class HumanFeedbackInput(BaseModel):
-    """Input schema for human_feedback_activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    prompt: Optional[str] = Field(None, description="Feedback prompt for human")
-    context: Optional[Dict[str, Any]] = Field(None, description="Additional context for decision")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "step_id": "step_003",
-                "prompt": "Approve emergency repair?",
-                "context": {"cost": 5000, "urgency": "high"}
-            }
-        }
-
-
-class HumanFeedbackOutput(BaseModel):
-    """Output schema for human_feedback_activity."""
-    approved: bool = Field(..., description="Whether action was approved")
-    feedback: str = Field(..., description="Human feedback text")
-    status: str = Field(..., description="Activity completion status")
-
-
-class HumanVerificationInput(BaseModel):
-    """Input schema for human_verification_activity."""
-    step_id: Optional[str] = Field(default="unknown", description="Workflow step identifier")
-    verification_type: Optional[str] = Field(default="quality", description="Type of verification needed")
-    data_to_verify: Optional[Dict[str, Any]] = Field(None, description="Data requiring verification")
-
-
-class HumanVerificationOutput(BaseModel):
-    """Output schema for human_verification_activity."""
-    verified: bool = Field(..., description="Whether verification passed")
-    notes: str = Field(..., description="Verification notes")
-    status: str = Field(..., description="Activity completion status")
 
 
 # ============================================================================

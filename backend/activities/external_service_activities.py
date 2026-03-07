@@ -1,19 +1,23 @@
 """
-External service activities for contacting plumber and 
-contractor (deprecated) --> Next patch should include an inheritance structure for external activity
+External service activities — DEMO MOCK.
 
-services.
-Uses PlumberAPIAdapter from the infrastructure layer.
+Mocks the plumber dispatch as a bi-directional chat session.
+exchanging messages between the system and the plumber, and returning
+a full chat transcript.
+
+Uses LLM to generate the initial dispatch instructions.
 """
+import asyncio
 import logging
+from datetime import datetime, timedelta, timezone
+
 from temporalio import activity
+
 from infrastructure.plumber.plumber_factory import PlumberFactory
 from sessions.llm import LLMFactory
 from schemas.activity_schemas import (
     ContactPlumberInput,
     ContactPlumberOutput,
-    AwaitPlumberConfirmationInput,
-    AwaitPlumberConfirmationOutput,
 )
 
 logger = logging.getLogger(__name__)
@@ -22,59 +26,43 @@ logger = logging.getLogger(__name__)
 _plumber_service = PlumberFactory.get_plumber_service()
 _llm_service = LLMFactory.get_llm_service()
 
+# ---------------------------------------------------------------------------
+# Mock plumber responses for the bi-directional chat demo
+# ---------------------------------------------------------------------------
+_MOCK_PLUMBER_REPLIES = [
+    {
+        "delay_seconds": 1,
+        "message": "Acknowledged. Reviewing the dispatch details now.",
+    },
+    {
+        "delay_seconds": 2,
+        "message": (
+            "I can see the issue — burst pipe in the basement parking area. "
+            "I'll bring the pipe repair kit and welding equipment. "
+            "ETA: approximately 30 minutes."
+        ),
+    },
+    {
+        "delay_seconds": 1,
+        "message": (
+            "Arrived on site. Starting inspection of the burst pipe. "
+            "Will send status updates as I work."
+        ),
+    },
+    {
+        "delay_seconds": 2,
+        "message": (
+            "Inspection complete — 6-inch PVC main has a 3-inch longitudinal crack. "
+            "Shutting off the isolation valve and preparing a coupling repair. "
+            "Estimated repair time: 45 minutes."
+        ),
+    },
+    {
+        "delay_seconds": 2,
+        "message": (
+            "Repair finished. Water flow restored and pressure tested at 60 PSI — "
+            "holding steady. No further leaks detected. Cleaning up the area now."
+        ),
+    },
+]
 
-@activity.defn
-async def contact_plumber(input: ContactPlumberInput) -> ContactPlumberOutput:
-    """
-    Contact the plumber external service with LLM-enhanced dispatch instructions.
-
-    LLM service is available for generating contextualized dispatch text if needed.
-
-    Args:
-        input: ContactPlumberInput containing issue details, location, urgency, etc.
-
-    Returns:
-        ContactPlumberOutput with service response.
-    """
-    logger.info("contact_plumber activity — step_id=%s", input.step_id)
-
-    # Generate enhanced dispatch text using LLM if description is provided
-    enhanced_input = input.model_dump()
-    if input.description:
-        prompt = f"Generate dispatch instructions for a {input.urgency} urgency plumbing issue: {input.description}"
-        if input.location:
-            prompt += f" at location: {input.location}"
-        
-        logger.info("Generating LLM-enhanced dispatch text")
-        dispatch_text = await _llm_service.generate_report({"problem_statement": prompt})
-        enhanced_input["dispatch_text"] = dispatch_text
-
-    result = await _plumber_service.contact(enhanced_input)
-
-    return ContactPlumberOutput(
-        step_id=input.step_id,
-        service="plumber",
-        result=result,
-        status="completed",
-    )
-
-
-@activity.defn
-async def await_plumber_confirmation_activity(input: AwaitPlumberConfirmationInput) -> AwaitPlumberConfirmationOutput:
-    """
-    Logs that a follow-up is expected from the plumber with LLM-generated follow-up instructions.
-    """
-    logger.info("await_plumber_confirmation_activity: follow-up expected")
-
-    # Generate intelligent follow-up message using LLM
-    prompt = f"Generate follow-up instructions for plumber confirmation based on: {input.model_dump()}"
-    logger.info("Generating LLM-enhanced follow-up instructions")
-    follow_up_instructions = await _llm_service.generate_report({"problem_statement": prompt})
-
-    # TODO: Implement actual waiting mechanism (e.g., polling, signal) in Backend
-
-    # Simulation: Log to DB or system that we are waiting for a signal
-    return AwaitPlumberConfirmationOutput(
-        status="waiting_for_signal",
-        message=f"System is now expecting a follow-up signal from plumber. Instructions: {follow_up_instructions[:100]}..."
-    )

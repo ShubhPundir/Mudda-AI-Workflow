@@ -107,6 +107,8 @@ class GeminiLLMAdapter(LLMInterface):
         context = inputs.get("context", {})
         report_type = inputs.get("report_type", "summary")
 
+        # TODO: this method must be use-case agnostic, perhaps keep this in interface
+
         prompt = (
             f"Generate a {report_type} report for the following civic issue:\n\n"
             f"Issue: {problem}\n\n"
