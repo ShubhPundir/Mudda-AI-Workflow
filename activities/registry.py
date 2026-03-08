@@ -35,41 +35,140 @@ ACTIVITY_METADATA: Dict[str, Dict[str, Any]] = {
             }
         }
     },
-    # TODO: add similar inputs, outputs, schemas, example for below
     "pdf_service_activity": {
         "id": "pdf_service_activity",
         "name": "Generate PDF Report",
         "description": "Generates a PDF report using AI content and local templates, then uploads to S3 for secure access and distribution.",
         "inputs": ["content", "template_id"],
-        "outputs": ["s3_url", "file_path", "filename"]
+        "outputs": ["s3_url", "file_path", "filename"],
+        "schema": {
+            "inputs": {
+                "step_id": "string (required)",
+                "content": "string (required) - Data to include in report",
+                "title": "string (optional) - Custom title for report",
+                "report_type": "string (optional) - Type of report (default: summary)"
+            }
+        },
+        "example": {
+            "step_id": "step_002_generate_report",
+            "activity_id": "pdf_service_activity",
+            "description": "Generate damage assessment report",
+            "requires_approval": False,
+            "inputs": {
+                "step_id": "step_002_generate_report",
+                "content": "Water leak investigation at {{step_001_fetch_issue.location}}. Damage: {{step_001_fetch_issue.description}}",
+                "title": "Water Leak Investigation Report",
+                "report_type": "damage_assessment"
+            }
+        }
     },
     "update_issue_activity": {
         "id": "update_issue_activity",
         "name": "Update Issue Status",
         "description": "Synchronizes the current workflow state with the main database issue record using LLM-enhanced status summaries and next-step recommendations.",
         "inputs": ["issue_id", "status", "notes"],
-        "outputs": ["success", "llm_summary", "next_step_recommendation"]
+        "outputs": ["success", "llm_summary", "next_step_recommendation"],
+        "schema": {
+            "inputs": {
+                "step_id": "string (required)",
+                "issue_id": "string (required) - ID of the issue to update",
+                "status": "string (required) - New status (e.g., 'resolved', 'in_progress')",
+                "notes": "string (optional) - Details about the update"
+            }
+        },
+        "example": {
+            "step_id": "step_004_update_status",
+            "activity_id": "update_issue_activity",
+            "description": "Update issue status to in_progress",
+            "requires_approval": False,
+            "inputs": {
+                "step_id": "step_004_update_status",
+                "issue_id": "{{issue_id}}",
+                "status": "in_progress",
+                "notes": "Worker dispatched to site."
+            }
+        }
     },
     "dispatch_worker_activity": {
         "id": "dispatch_worker_activity",
         "name": "Dispatch Worker",
         "description": "Dispatches a worker (plumber, electrician, etc.) to a specific location to resolve an issue.",
         "inputs": ["worker_type", "issue_id", "location", "urgency", "description"],
-        "outputs": ["dispatch_id", "status", "worker_notified", "worker_name", "worker_phone", "estimated_arrival", "worker_response", "message"]
+        "outputs": ["dispatch_id", "status", "worker_notified", "worker_name", "worker_phone", "estimated_arrival", "worker_response", "message"],
+        "schema": {
+            "inputs": {
+                "step_id": "string (required)",
+                "issue_id": "string (required)",
+                "worker_type": "string (required) - Type of worker (plumber, electrician, etc.)",
+                "location": "string (required) - Where to dispatch",
+                "urgency": "string (required) - low, high, critical",
+                "description": "string (required) - Problem description for worker"
+            }
+        },
+        "example": {
+            "step_id": "step_001_dispatch",
+            "activity_id": "dispatch_worker_activity",
+            "description": "Dispatch plumber for water leak",
+            "requires_approval": True,
+            "inputs": {
+                "step_id": "step_001_dispatch",
+                "issue_id": "{{issue_id}}",
+                "worker_type": "plumber",
+                "location": "42 MG Road, Sector 14, Gurugram",
+                "urgency": "critical",
+                "description": "Major water pipe burst"
+            }
+        }
     },
     "request_site_photos_activity": {
         "id": "request_site_photos_activity",
         "name": "Request Site Photos",
         "description": "Requests photos from the dispatched worker for validation or record keeping.",
         "inputs": ["dispatch_id", "message"],
-        "outputs": ["request_id", "status", "photos_uploaded", "photo_urls", "worker_notes"]
+        "outputs": ["request_id", "status", "photos_uploaded", "photo_urls", "worker_notes"],
+        "schema": {
+            "inputs": {
+                "step_id": "string (required)",
+                "dispatch_id": "string (required) - ID from dispatch activity",
+                "message": "string (required) - Instructions for what to photograph"
+            }
+        },
+        "example": {
+            "step_id": "step_002_photos",
+            "activity_id": "request_site_photos_activity",
+            "description": "Request before/after photos",
+            "requires_approval": False,
+            "inputs": {
+                "step_id": "step_002_photos",
+                "dispatch_id": "{{step_001_dispatch.dispatch_id}}",
+                "message": "Upload photos of the broken pipe and the final fix."
+            }
+        }
     },
     "confirm_task_completion_activity": {
         "id": "confirm_task_completion_activity",
         "name": "Confirm Task Completion",
         "description": "Marks a worker dispatch task as fully completed in the system.",
         "inputs": ["dispatch_id", "notes"],
-        "outputs": ["status", "confirmed_at", "completion_notes", "time_spent_minutes", "materials_used", "follow_up_required"]
+        "outputs": ["status", "confirmed_at", "completion_notes", "time_spent_minutes", "materials_used", "follow_up_required"],
+        "schema": {
+            "inputs": {
+                "step_id": "string (required)",
+                "dispatch_id": "string (required)",
+                "notes": "string (optional) - Final completion notes"
+            }
+        },
+        "example": {
+            "step_id": "step_003_confirm",
+            "activity_id": "confirm_task_completion_activity",
+            "description": "Confirm plumbing job completion",
+            "requires_approval": False,
+            "inputs": {
+                "step_id": "step_003_confirm",
+                "dispatch_id": "{{step_001_dispatch.dispatch_id}}",
+                "notes": "Work verified by inspector."
+            }
+        }
     },
 }
 

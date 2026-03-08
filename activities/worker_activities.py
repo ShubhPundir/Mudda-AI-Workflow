@@ -21,6 +21,7 @@ from schemas.activity_schemas import (
 logger = logging.getLogger(__name__)
 
 # Mock worker database for realistic demo
+# TODO: replace with results from CRM
 MOCK_WORKERS = {
     "plumber": [
         {"name": "Rajesh Kumar", "phone": "+91-98765-43210", "rating": 4.8},
@@ -41,6 +42,14 @@ WORKER_RESPONSES = [
     "Acknowledged. Heading to the location now.",
     "Received the dispatch. ETA 20 minutes.",
     "Got it! I'm nearby, will be there shortly.",
+]
+
+MOCK_SITE_PHOTOS = [
+    "s3://mudda-field-photos/cleaning.png",
+    "s3://mudda-field-photos/broken-pipe.png",
+    "s3://mudda-field-photos/underground-pipeline.png",
+    "s3://mudda-field-photos/geyser.jpg",
+    "s3://mudda-field-photos/plumber.png",
 ]
 
 PHOTO_NOTES = [
@@ -170,11 +179,8 @@ async def request_site_photos_activity(
     await asyncio.sleep(2)
 
     # Generate mock photo data
-    num_photos = random.randint(3, 6)
-    photo_urls = [
-        f"https://mudda-field-photos.s3.amazonaws.com/{inputs.dispatch_id}/photo_{i+1}_{uuid.uuid4().hex[:6]}.jpg"
-        for i in range(num_photos)
-    ]
+    num_photos = random.randint(1, 3)
+    photo_urls = random.sample(MOCK_SITE_PHOTOS, num_photos)
     worker_notes = random.choice(PHOTO_NOTES)
 
     logger.info(
