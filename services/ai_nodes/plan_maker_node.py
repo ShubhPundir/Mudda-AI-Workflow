@@ -3,11 +3,16 @@ Plan Maker Node for LangGraph workflow
 Creates detailed workflow plans from selected activities
 """
 import json
+import logging
 from typing import Dict, Any
+
 from sessions.llm.llm_factory import LLMFactory
 from schemas.ai_schemas import WorkflowPlanResponse
 from .graph_state import GraphState
 from .prompts import get_workflow_generation_prompt
+
+
+logger = logging.getLogger(__name__)
 
 
 async def plan_maker_node(state: GraphState) -> GraphState:
@@ -72,7 +77,7 @@ The workflow must comply with the relevant policies and regulations provided abo
         # Use structured output - no regex needed!
         workflow_plan = await llm.generate_structured(
             prompt,
-            WorkflowPlanResponse
+            WorkflowPlanResponse,
         )
         
         # Additional validation: check activity IDs exist
@@ -81,6 +86,12 @@ The workflow must comply with the relevant policies and regulations provided abo
         
         # Convert to dict for state storage
         workflow_json = workflow_plan.model_dump()
+
+        # Log the full AI-generated plan so we can trace fields like photo_urls
+        logger.info(
+            "AI workflow plan generated:\n%s",
+            json.dumps(workflow_json, indent=2, ensure_ascii=False),
+        )
         
         new_state["workflow_json"] = workflow_json
         new_state["current_step"] = "workflow_generation_complete"

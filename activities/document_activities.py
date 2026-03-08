@@ -48,18 +48,26 @@ async def pdf_service_activity(input: PDFServiceInput) -> PDFServiceOutput:
     # Step 3: Upload to S3
     s3_url = await S3Service.upload_document(pdf_result["file_path"])
 
+    # Convert internal S3 URL to public HTTPS URL
+    public_url = s3_url
+    if s3_url.startswith("s3://"):
+        s3_path = s3_url[len("s3://") :]
+        bucket, _, key = s3_path.partition("/")
+        if bucket and key:
+            public_url = f"https://{bucket}.s3.ap-south-1.amazonaws.com/{key}"
+
     logger.info(
         "Report generated and uploaded — step_id=%s file=%s s3=%s",
         input.step_id,
         pdf_result.get("file_path"),
-        s3_url
+        public_url,
     )
 
     return PDFServiceOutput(
         step_id=input.step_id,
         status="completed",
         file_path=pdf_result["file_path"],
-        s3_url=s3_url,
+        s3_url=public_url,
         filename=pdf_result["filename"],
         size_bytes=pdf_result["size_bytes"],
         ai_metadata={

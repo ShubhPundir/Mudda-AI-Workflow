@@ -45,11 +45,11 @@ WORKER_RESPONSES = [
 ]
 
 MOCK_SITE_PHOTOS = [
-    "s3://mudda-field-photos/cleaning.png",
-    "s3://mudda-field-photos/broken-pipe.png",
-    "s3://mudda-field-photos/underground-pipeline.png",
-    "s3://mudda-field-photos/geyser.jpg",
-    "s3://mudda-field-photos/plumber.png",
+    "https://mudda-field-photos.s3.ap-south-1.amazonaws.com/cleaning.png",
+    "https://mudda-field-photos.s3.ap-south-1.amazonaws.com/broken-pipe.png",
+    "https://mudda-field-photos.s3.ap-south-1.amazonaws.com/underground-pipeline.png",
+    "https://mudda-field-photos.s3.ap-south-1.amazonaws.com/geyser.jpg",
+    "https://mudda-field-photos.s3.ap-south-1.amazonaws.com/plumber.png",
 ]
 
 PHOTO_NOTES = [
